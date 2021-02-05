@@ -41,6 +41,7 @@ void Yield::Init(std::map<std::string, void *> &Map) {
   }
   centrality_classes_ = new TH1F( "centrality", ";centrality", 20, 0.0, 100.0 );
   out_file_->cd();
+  std::cout << "Initialized" << std::endl;
 }
 
 void Yield::Exec() {
@@ -88,4 +89,5 @@ void Yield::Finish() {
     histo->Write();
     bin++;
   }
+  std::cout << "Finished" << std::endl;
 }
