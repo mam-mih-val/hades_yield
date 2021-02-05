@@ -58,7 +58,6 @@ void Yield::Exec() {
     histo = yields_.at(c_class);
   } catch (std::out_of_range&) { return; }
   for (int i_track = 0; i_track < tracks_->GetNumberOfChannels(); ++i_track) {
-    std::cout << "track " << i_track << std::endl;
     auto track = tracks_->GetChannel(i_track);
     auto chi2 = track.GetField<float>(chi2_id);
     if( chi2 > 100.0 )
@@ -77,17 +76,12 @@ void Yield::Exec() {
 
     histo->Fill(ycm, pT);
   }
-  std::cout << "**********************" << std::endl;
 }
 void Yield::Finish() {
   centrality_classes_->Write();
-  int bin=1;
   for( auto histo : yields_ ) {
     histo->Sumw2();
-    auto n_events = centrality_classes_->GetBinContent(bin);
-    histo->Scale(1.0/n_events);
     histo->Write();
-    bin++;
   }
   std::cout << "Finished" << std::endl;
 }
