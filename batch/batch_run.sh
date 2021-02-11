@@ -24,10 +24,10 @@ module load compiler/gcc/9
 echo "loading " $ownroot
 source $ownroot
 
-echo "executing $build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --event-cuts hades/auau/1.23/event_cuts/standard/pt3"
+echo "executing $build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --event-cuts hades/auau/1.23/event_cuts/standard/off_target"
 
-#$build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --event-cuts hades/auau/1.23/event_cuts/standard/pt3
-$build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root
+$build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --event-cuts hades/auau/1.23/event_cuts/standard/pt3
+#$build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root
 
 date $format
 echo JOB FINISHED!
