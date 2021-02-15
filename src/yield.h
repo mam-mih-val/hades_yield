@@ -40,6 +40,7 @@ private:
 
   std::vector<TH2F*> yields_;
   TH1F* centrality_classes_;
+  TH1F* vtx_z_;
 
 TASK_DEF(Yield, 0)
 };

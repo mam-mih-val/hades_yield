@@ -40,13 +40,16 @@ void Yield::Init(std::map<std::string, void *> &Map) {
     p+=5;
   }
   centrality_classes_ = new TH1F( "centrality", ";centrality", 20, 0.0, 100.0 );
+  vtx_z_ = new TH1F( "vtx_z", ";VTX_{z} [mm]", 150, -125.0, 0.25 );
   out_file_->cd();
   std::cout << "Initialized" << std::endl;
 }
 
 void Yield::Exec() {
   auto centrality = event_header_->GetField<float>( event_header_config_.GetFieldId("selected_tof_rpc_hits_centrality") );
+  auto vtx_z = event_header_->GetVertexZ();
   centrality_classes_->Fill( centrality );
+  vtx_z_->Fill(vtx_z);
   int c_class = (int) ( (centrality-2.5)/5.0 );
   auto n_tracks = tracks_->GetNumberOfChannels();
   float y_beam_2{0.74};
@@ -79,6 +82,7 @@ void Yield::Exec() {
 }
 void Yield::Finish() {
   centrality_classes_->Write();
+  vtx_z_->Write();
   for( auto histo : yields_ ) {
     histo->Sumw2();
     histo->Write();
