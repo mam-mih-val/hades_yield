@@ -21,9 +21,9 @@
 class Yield : public UserFillTask {
 
 public:
-  void Init(std::map<std::string, void *> &Map) override;
-  void Exec() override;
-  void Finish() override;
+  void UserInit(std::map<std::string, void *> &Map) override;
+  void UserExec() override;
+  void UserFinish() override;
   boost::program_options::options_description GetBoostOptions() override;
   void PreInit() override;
   void PostFinish() override {
@@ -31,16 +31,18 @@ public:
   }
 
 private:
-  int pdg_code_;
-  std::string tracks_branch_;
-  AnalysisTree::Particles *tracks_{nullptr};
-  AnalysisTree::BranchConfig tracks_config_;
-  AnalysisTree::EventHeader *event_header_{nullptr};
-  AnalysisTree::BranchConfig event_header_config_;
+  ATI2::Branch* event_header_;
+  ATI2::Branch* tracks_{nullptr};
+  ATI2::Variable centrality_;
+  ATI2::Variable pdg_code_;
+  ATI2::Variable dca_xy_;
+  ATI2::Variable dca_z_;
+  ATI2::Variable chi2_;
 
   std::vector<TH2F*> yields_;
+  TH1F* pt_distribution_;
+  TH2F* rapidity_true_mass_;
   TH1F* centrality_classes_;
-  TH1F* vtx_z_;
 
 TASK_DEF(Yield, 0)
 };

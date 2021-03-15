@@ -15,21 +15,23 @@ boost::program_options::options_description Yield::GetBoostOptions() {
   using namespace boost::program_options;
 
   options_description desc(GetName() + " options");
-  desc.add_options()
-      ("tracks-branch", value(&tracks_branch_)->default_value("mdc_vtx_tracks"), "Name of branch with tracks")
-      ("pdg-code", value(&pdg_code_)->default_value(2212), "PDG-Code");
   return desc;
 }
 
 void Yield::PreInit() {
-  SetInputBranchNames({tracks_branch_, "event_header"});
+  SetInputBranchNames({"mdc_vtx_tracks", "event_header"});
 }
 
-void Yield::Init(std::map<std::string, void *> &Map) {
-  tracks_ = static_cast<AnalysisTree::Particles*>(Map.at(tracks_branch_));
-  tracks_config_  = config_->GetBranchConfig(tracks_branch_);
-  event_header_ = static_cast<AnalysisTree::EventHeader*>(Map.at("event_header"));
-  event_header_config_  = config_->GetBranchConfig("event_header");
+void Yield::UserInit(std::map<std::string, void *> &Map) {
+  event_header_ = GetInBranch("event_header");
+  centrality_ = GetVar("event_header/selected_tof_rpc_hits_centrality");
+
+  tracks_ = GetInBranch("mdc_vtx_tracks");
+  pdg_code_ = GetVar("mdc_vtx_tracks/pid");
+  dca_xy_ = GetVar("mdc_vtx_tracks/dca_xy");
+  dca_z_ = GetVar("mdc_vtx_tracks/dca_z");
+  chi2_ = GetVar("mdc_vtx_tracks/chi2");
+
   float y_axis[16];
   for(int j=0; j<16; ++j){ y_axis[j]=-0.75f+0.1f* (float) j; }
   float pt_axis[]={0, 0.29375, 0.35625, 0.41875, 0.48125, 0.54375, 0.61875, 0.70625, 0.81875, 1.01875, 2.0};
@@ -39,50 +41,52 @@ void Yield::Init(std::map<std::string, void *> &Map) {
     yields_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, y_axis, 10, pt_axis ) );
     p+=5;
   }
+  pt_distribution_ = new TH1F( "pT_distribution", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
+  rapidity_true_mass_ = new TH2F( "y_tof_vs_y_pdg", ";PDG-mass y_{cm};TOF-mass y_{cm};", 200, -1.0, 1.0, 200, -1.0, 1.0 );
   centrality_classes_ = new TH1F( "centrality", ";centrality", 20, 0.0, 100.0 );
-  vtx_z_ = new TH1F( "vtx_z", ";VTX_{z} [mm]", 150, -125.0, 0.25 );
   out_file_->cd();
+
   std::cout << "Initialized" << std::endl;
 }
 
-void Yield::Exec() {
-  auto centrality = event_header_->GetField<float>( event_header_config_.GetFieldId("selected_tof_rpc_hits_centrality") );
-  auto vtx_z = event_header_->GetVertexZ();
+void Yield::UserExec() {
+  using AnalysisTree::Particle;
+
+  auto centrality = (*event_header_)[centrality_].GetVal();
   centrality_classes_->Fill( centrality );
-  vtx_z_->Fill(vtx_z);
   int c_class = (int) ( (centrality-2.5)/5.0 );
-  auto n_tracks = tracks_->GetNumberOfChannels();
-  float y_beam_2{0.74};
-  auto chi2_id = tracks_config_.GetFieldId("chi2");
-  auto dca_xy_id = tracks_config_.GetFieldId("dca_xy");
-  auto dca_z_id = tracks_config_.GetFieldId("dca_z");
+  float y_beam_2 = data_header_->GetBeamRapidity();
   TH2F* histo{nullptr};
   try {
     histo = yields_.at(c_class);
   } catch (std::out_of_range&) { return; }
-  for (int i_track = 0; i_track < tracks_->GetNumberOfChannels(); ++i_track) {
-    auto track = tracks_->GetChannel(i_track);
-    auto chi2 = track.GetField<float>(chi2_id);
+  for (auto track : tracks_->Loop()) {
+    auto chi2 = track[chi2_].GetVal();
+    auto dca_xy = track[dca_xy_].GetVal();
+    auto dca_z = track[dca_z_].GetVal();
     if( chi2 > 100.0 )
       continue;
-    auto dca_xy = track.GetField<float>(dca_xy_id);
     if ( -10 > dca_xy || dca_xy > 10 )
       continue;
-    auto dca_z = track.GetField<float>(dca_z_id);
     if ( -10 > dca_z || dca_z > 10 )
       continue;
-    auto pid = track.GetPid();
-    if( pid != pdg_code_ )
+    auto pid = track[pdg_code_];
+    if( pid != 2212 )
       continue;
-    auto pT = track.GetPt();
-    auto ycm = track.GetRapidity() - y_beam_2;
-
-    histo->Fill(ycm, pT);
+    const float p_mass = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
+    auto mom4 = track.DataT<Particle>()->Get4MomentumByMass(p_mass);
+    auto y_tof = track.DataT<Particle>()->GetRapidity() - y_beam_2;
+    auto pT = mom4.Pt();
+    auto y_pdg = mom4.Rapidity() - y_beam_2;
+    histo->Fill(y_pdg, pT);
+    pt_distribution_->Fill(pT);
+    rapidity_true_mass_->Fill( y_pdg, y_tof );
   }
 }
-void Yield::Finish() {
+void Yield::UserFinish() {
   centrality_classes_->Write();
-  vtx_z_->Write();
+  pt_distribution_->Write();
+  rapidity_true_mass_->Write();
   for( auto histo : yields_ ) {
     histo->Sumw2();
     histo->Write();
