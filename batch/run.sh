@@ -3,11 +3,11 @@
 file_list=$1
 output_dir=$2
 
-ownroot=/lustre/nyx/hades/user/mmamaev/install/root-6.20.04/bin/thisroot.sh
+ownroot=/lustre/nyx/hades/user/mmamaev/install/root-6.18.04/bin/thisroot.sh
 
 current_dir=$(pwd)
-partition=debug
-time=0:20:00
+partition=main
+time=8:00:00
 build_dir=/lustre/nyx/hades/user/mmamaev/hades_yield/build/src
 
 lists_dir=${output_dir}/lists/
