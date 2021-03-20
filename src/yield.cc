@@ -19,7 +19,7 @@ boost::program_options::options_description Yield::GetBoostOptions() {
 }
 
 void Yield::PreInit() {
-  SetInputBranchNames({"mdc_vtx_tracks", "event_header"});
+  SetInputBranchNames({"mdc_vtx_tracks", "event_header", "sim_tracks"});
 }
 
 void Yield::UserInit(std::map<std::string, void *> &Map) {
@@ -32,6 +32,10 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   dca_z_ = GetVar("mdc_vtx_tracks/dca_z");
   chi2_ = GetVar("mdc_vtx_tracks/chi2");
 
+  sim_particles_ = GetInBranch("sim_tracks");
+  sim_pdg_code_ = GetVar("sim_tracks/pid");
+  is_primary_ = GetVar("sim_tracks/is_primary");
+
   float y_axis[16];
   for(int j=0; j<16; ++j){ y_axis[j]=-0.75f+0.1f* (float) j; }
   float pt_axis[]={0, 0.29375, 0.35625, 0.41875, 0.48125, 0.54375, 0.61875, 0.70625, 0.81875, 1.01875, 2.0};
@@ -41,7 +45,8 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
     yields_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, y_axis, 10, pt_axis ) );
     p+=5;
   }
-  pt_distribution_ = new TH1F( "pT_distribution", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
+  pt_distribution_reco_ = new TH1F( "pT_distribution_reco", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
+  pt_distribution_sim_ = new TH1F( "pT_distribution_sim", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
   rapidity_true_mass_ = new TH2F( "y_tof_vs_y_pdg", ";PDG-mass y_{cm};TOF-mass y_{cm};", 200, -1.0, 1.0, 200, -1.0, 1.0 );
   centrality_classes_ = new TH1F( "centrality", ";centrality", 20, 0.0, 100.0 );
   out_file_->cd();
@@ -79,13 +84,32 @@ void Yield::UserExec() {
     auto pT = mom4.Pt();
     auto y_pdg = mom4.Rapidity() - y_beam_2;
     histo->Fill(y_pdg, pT);
-    pt_distribution_->Fill(pT);
     rapidity_true_mass_->Fill( y_pdg, y_tof );
+    if( y_pdg < 0.15 )
+      continue;
+    if( y_pdg > 0.25 )
+      continue;
+    pt_distribution_reco_->Fill(pT);
+  }
+  for (auto particle : sim_particles_->Loop()) {
+    if( particle[sim_pdg_code_].GetInt() != 2212 )
+      continue;
+    if( !particle[is_primary_].GetBool() )
+      continue;
+    auto mass = particle.DataT<Particle>()->GetMass();
+    auto mom4 = particle.DataT<Particle>()->Get4MomentumByMass(mass);
+    auto y_cm = mom4.Rapidity() - y_beam_2;
+    if( y_cm < 0.15 )
+      continue;
+    if( y_cm > 0.25 )
+      continue;
+    pt_distribution_sim_->Fill( mom4.Pt() );
   }
 }
 void Yield::UserFinish() {
   centrality_classes_->Write();
-  pt_distribution_->Write();
+  pt_distribution_reco_->Write();
+  pt_distribution_sim_->Write();
   rapidity_true_mass_->Write();
   for( auto histo : yields_ ) {
     histo->Sumw2();

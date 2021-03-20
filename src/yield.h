@@ -14,6 +14,7 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
+#include <TProfile.h>
 #include <at_task/Task.h>
 #include <memory>
 #include <string>
@@ -33,14 +34,19 @@ public:
 private:
   ATI2::Branch* event_header_;
   ATI2::Branch* tracks_{nullptr};
+  ATI2::Branch* sim_particles_{nullptr};
   ATI2::Variable centrality_;
   ATI2::Variable pdg_code_;
   ATI2::Variable dca_xy_;
   ATI2::Variable dca_z_;
   ATI2::Variable chi2_;
 
+  ATI2::Variable sim_pdg_code_;
+  ATI2::Variable is_primary_;
+
   std::vector<TH2F*> yields_;
-  TH1F* pt_distribution_;
+  TH1F* pt_distribution_reco_;
+  TH1F* pt_distribution_sim_;
   TH2F* rapidity_true_mass_;
   TH1F* centrality_classes_;
 
