@@ -89,9 +89,9 @@ void Yield::UserExec() {
     auto y_pdg = mom4.Rapidity() - y_beam_2;
     histo->Fill(y_pdg, pT);
     rapidity_true_mass_->Fill( y_pdg, y_tof );
-    if( y_pdg < -0.25 )
+    if( y_pdg < 0.15 )
       continue;
-    if( y_pdg > -0.15 )
+    if( y_pdg > 0.25 )
       continue;
     pt_distribution_reco_->Fill(pT);
   }
