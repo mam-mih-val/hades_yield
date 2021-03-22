@@ -62,6 +62,10 @@ void Yield::UserExec() {
   int c_class = (int) ( (centrality-2.5)/5.0 );
   float y_beam_2 = data_header_->GetBeamRapidity();
   TH2F* histo{nullptr};
+  if( centrality > 25 )
+    return;
+  if( centrality < 20 )
+    return;
   try {
     histo = yields_.at(c_class);
   } catch (std::out_of_range&) { return; }
@@ -85,9 +89,9 @@ void Yield::UserExec() {
     auto y_pdg = mom4.Rapidity() - y_beam_2;
     histo->Fill(y_pdg, pT);
     rapidity_true_mass_->Fill( y_pdg, y_tof );
-    if( y_pdg < 0.15 )
+    if( y_pdg < -0.25 )
       continue;
-    if( y_pdg > 0.25 )
+    if( y_pdg > -0.15 )
       continue;
     pt_distribution_reco_->Fill(pT);
   }
