@@ -8,7 +8,7 @@
 
 int main(int n_args, char** args){
   if( n_args < 3 )
-    throw std::runtime_error( "Minimum 2 argumet expected." );
+    throw std::runtime_error( "Minimum 2 arguments expected." );
   std::string input_file{ args[1] };
   std::string output_file{ args[2] };
   auto file_in = TFile::Open( input_file.c_str() );
@@ -23,7 +23,8 @@ int main(int n_args, char** args){
     file_in->GetObject(histo_name.c_str(), histo);
     auto events = centrality->GetBinContent(bin);
     histo->Scale(1.0/events);
-    yields.push_back(histo);
+    histo_name="yield_"+std::to_string(p)+"_"+std::to_string(p+5);
+    yields.push_back( (TH2F*) histo->Clone(histo_name.c_str()));
     p+=5;
   }
   std::vector<TH2F*> efficiencies;
@@ -47,7 +48,7 @@ int main(int n_args, char** args){
   float pt_axis[]={0, 0.29375, 0.35625, 0.41875, 0.48125, 0.54375, 0.61875, 0.70625, 0.81875, 1.01875, 2.0};
   p=0;
   for( auto histo : yields ){
-    std::string histo_name{ "symmetric_"+std::to_string(p)+"-"+std::to_string(p+5) };
+    std::string histo_name{ "symmetric_"+std::to_string(p)+"_"+std::to_string(p+5) };
     symmetric_yields.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, y_axis, 10, pt_axis ) );
     for( auto y_bin=1; y_bin <=15; y_bin++ ){
       for( auto pt_bin=1; pt_bin<=10; pt_bin++){
@@ -58,9 +59,19 @@ int main(int n_args, char** args){
       }
     }
     symmetric_yields.back()->SetEntries(histo->GetEntries());
-    histo_name = "acceptacne_"+std::to_string(p)+"-"+std::to_string(p+5);
+    histo_name = "acceptacne_"+std::to_string(p)+"_"+std::to_string(p+5);
     acceptance.push_back( (TH2F*) histo->Clone(histo_name.c_str()) );
-    acceptance.back()->Add( symmetric_yields.back(), -1.0 );
+    for( auto y_bin=1; y_bin <=15; y_bin++ ){
+      for( auto pt_bin=1; pt_bin<=10; pt_bin++){
+        auto a = histo->GetBinContent( y_bin, pt_bin );
+        auto a_err = histo->GetBinError( y_bin, pt_bin );
+        auto b = symmetric_yields.back()->GetBinContent( y_bin, pt_bin );
+        auto b_err = symmetric_yields.back()->GetBinError( y_bin, pt_bin );
+        auto err = sqrt( a_err*a_err + b_err*b_err );
+        acceptance.back()->SetBinContent(y_bin, pt_bin, a-b);
+        acceptance.back()->SetBinError(y_bin, pt_bin, err);
+      }
+    }
     p+=5;
   }
 
