@@ -35,7 +35,6 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   sim_particles_ = GetInBranch("sim_tracks");
   sim_pdg_code_ = GetVar("sim_tracks/pid");
   is_primary_ = GetVar("sim_tracks/is_primary");
-
   float y_axis[16];
   for(int j=0; j<16; ++j){ y_axis[j]=-0.75f+0.1f* (float) j; }
   float pt_axis[]={0, 0.29375, 0.35625, 0.41875, 0.48125, 0.54375, 0.61875, 0.70625, 0.81875, 1.01875, 2.0};
@@ -49,6 +48,8 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   pt_distribution_sim_ = new TH1F( "pT_distribution_sim", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
   rapidity_true_mass_ = new TH2F( "y_tof_vs_y_pdg", ";PDG-mass y_{cm};TOF-mass y_{cm};", 200, -1.0, 1.0, 200, -1.0, 1.0 );
   centrality_classes_ = new TH1F( "centrality", ";centrality", 20, 0.0, 100.0 );
+  ecm_pT_y_protons_ = new TH2F( "ecm_pT_y_protons_", ";y_{cm};p_{T} [GeV/c];E_{cm} [GeV]", 200, -1.0, 1.0, 200, 0.0, 2.0 );
+  ecm_pT_y_pions_ = new TH2F( "ecm_pT_y_pions_", ";y_{cm};p_{T} [GeV/c];E_{cm} [GeV]", 200, -1.0, 1.0, 200, 0.0, 2.0 );
   out_file_->cd();
 
   std::cout << "Initialized" << std::endl;
@@ -62,10 +63,10 @@ void Yield::UserExec() {
   int c_class = (int) ( (centrality-2.5)/5.0 );
   float y_beam_2 = data_header_->GetBeamRapidity();
   TH2F* histo{nullptr};
-  if( centrality > 25 )
-    return;
-  if( centrality < 20 )
-    return;
+//  if( centrality > 25 )
+//    return;
+//  if( centrality < 20 )
+//    return;
   try {
     histo = yields_.at(c_class);
   } catch (std::out_of_range&) { return; }
@@ -73,20 +74,29 @@ void Yield::UserExec() {
     auto chi2 = track[chi2_].GetVal();
     auto dca_xy = track[dca_xy_].GetVal();
     auto dca_z = track[dca_z_].GetVal();
-    if( chi2 > 100.0 )
+//    if( chi2 > 100.0 )
+//      continue;
+//    if ( -10 > dca_xy || dca_xy > 10 )
+//      continue;
+//    if ( -10 > dca_z || dca_z > 10 )
+//      continue;
+    auto pid = track[pdg_code_].GetInt();
+    float p_mass;
+    if( TDatabasePDG::Instance()->GetParticle(pid) )
+      p_mass = TDatabasePDG::Instance()->GetParticle(pid)->Mass();
+    else
       continue;
-    if ( -10 > dca_xy || dca_xy > 10 )
-      continue;
-    if ( -10 > dca_z || dca_z > 10 )
-      continue;
-    auto pid = track[pdg_code_];
-    if( pid != 2212 )
-      continue;
-    const float p_mass = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
     auto mom4 = track.DataT<Particle>()->Get4MomentumByMass(p_mass);
     auto y_tof = track.DataT<Particle>()->GetRapidity() - y_beam_2;
     auto pT = mom4.Pt();
     auto y_pdg = mom4.Rapidity() - y_beam_2;
+    auto E_cm = coshf(y_tof)*sqrtf( p_mass*p_mass + pT*pT );
+    if( pid == 2212 )
+      ecm_pT_y_protons_->Fill( y_pdg, pT, E_cm );
+    if( abs(pid) == 211 )
+      ecm_pT_y_pions_->Fill( y_pdg, pT, E_cm );
+    if( pid != 2212 )
+      continue;
     histo->Fill(y_pdg, pT);
     rapidity_true_mass_->Fill( y_pdg, y_tof );
     if( y_pdg < -0.25 )
@@ -112,6 +122,8 @@ void Yield::UserExec() {
 }
 void Yield::UserFinish() {
   centrality_classes_->Write();
+  ecm_pT_y_protons_->Write();
+  ecm_pT_y_pions_->Write();
   pt_distribution_reco_->Write();
   pt_distribution_sim_->Write();
   rapidity_true_mass_->Write();

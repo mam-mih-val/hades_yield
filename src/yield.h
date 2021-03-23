@@ -50,6 +50,9 @@ private:
   TH2F* rapidity_true_mass_;
   TH1F* centrality_classes_;
 
+  TH2F* ecm_pT_y_protons_;
+  TH2F* ecm_pT_y_pions_;
+
 TASK_DEF(Yield, 0)
 };
 
