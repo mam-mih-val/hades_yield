@@ -44,14 +44,14 @@ private:
   ATI2::Variable sim_pdg_code_;
   ATI2::Variable is_primary_;
 
-  std::vector<TH2F*> yields_;
+  std::vector<TH2F*> rec_yields_non_uniform_;
+  std::vector<TH2F*> rec_yields_uniform_;
+  std::vector<TH2F*> gen_yields_non_uniform_;
+  std::vector<TH2F*> gen_yields_uniform_;
+  TH1F* centrality_classes_;
   TH1F* pt_distribution_reco_;
   TH1F* pt_distribution_sim_;
   TH2F* rapidity_true_mass_;
-  TH1F* centrality_classes_;
-
-  TH2F* ecm_pT_y_protons_;
-  TH2F* ecm_pT_y_pions_;
 
 TASK_DEF(Yield, 0)
 };

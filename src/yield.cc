@@ -39,19 +39,22 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   for(int j=0; j<16; ++j){ y_axis[j]=-0.75f+0.1f* (float) j; }
   float pt_axis[]={0, 0.29375, 0.35625, 0.41875, 0.48125, 0.54375, 0.61875, 0.70625, 0.81875, 1.01875, 2.0};
   int p=0;
-  while(p<40){
-    std::string histo_name{ "yield_"+std::to_string(p)+"-"+std::to_string(p+5) };
-    yields_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, y_axis, 10, pt_axis ) );
+  while(p<60){
+    std::string histo_name{ "rec_yields_non_uniform_"+std::to_string(p)+"-"+std::to_string(p+5) };
+    rec_yields_non_uniform_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, y_axis, 10, pt_axis ) );
+    histo_name =  "rec_yields_uniform_"+std::to_string(p)+"-"+std::to_string(p+5) ;
+    rec_yields_uniform_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, -0.75, 0.75, 16, 0.0, 1.6 ) );
+    histo_name =  "gen_yields_non_uniform_"+std::to_string(p)+"-"+std::to_string(p+5) ;
+    gen_yields_non_uniform_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, y_axis, 10, pt_axis ) );
+    histo_name =  "gen_yields_uniform_"+std::to_string(p)+"-"+std::to_string(p+5) ;
+    gen_yields_uniform_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, -0.75, 0.75, 16, 0.0, 1.6 ) );
     p+=5;
   }
   pt_distribution_reco_ = new TH1F( "pT_distribution_reco", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
   pt_distribution_sim_ = new TH1F( "pT_distribution_sim", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
   rapidity_true_mass_ = new TH2F( "y_tof_vs_y_pdg", ";PDG-mass y_{cm};TOF-mass y_{cm};", 200, -1.0, 1.0, 200, -1.0, 1.0 );
   centrality_classes_ = new TH1F( "centrality", ";centrality", 20, 0.0, 100.0 );
-  ecm_pT_y_protons_ = new TH2F( "ecm_pT_y_protons_", ";y_{cm};p_{T} [GeV/c];E_{cm} [GeV]", 200, -1.0, 1.0, 200, 0.0, 2.0 );
-  ecm_pT_y_pions_ = new TH2F( "ecm_pT_y_pions_", ";y_{cm};p_{T} [GeV/c];E_{cm} [GeV]", 200, -1.0, 1.0, 200, 0.0, 2.0 );
   out_file_->cd();
-
   std::cout << "Initialized" << std::endl;
 }
 
@@ -60,27 +63,32 @@ void Yield::UserExec() {
 
   auto centrality = (*event_header_)[centrality_].GetVal();
   centrality_classes_->Fill( centrality );
-  int c_class = (int) ( (centrality-2.5)/5.0 );
+  int c_class = (size_t) ( (centrality-2.5)/5.0 );
   float y_beam_2 = data_header_->GetBeamRapidity();
-  TH2F* histo{nullptr};
-//  if( centrality > 25 )
-//    return;
-//  if( centrality < 20 )
-//    return;
+  TH2F* histo_rec_non_uniform{nullptr};
+  TH2F* histo_rec_uniform{nullptr};
+  TH2F* histo_gen_non_uniform{nullptr};
+  TH2F* histo_gen_uniform{nullptr};
   try {
-    histo = yields_.at(c_class);
+    histo_rec_non_uniform = rec_yields_non_uniform_.at(c_class);
+    histo_rec_uniform = rec_yields_uniform_.at(c_class);
+    histo_gen_non_uniform = gen_yields_non_uniform_.at(c_class);
+    histo_gen_uniform = gen_yields_uniform_.at(c_class);
+
   } catch (std::out_of_range&) { return; }
   for (auto track : tracks_->Loop()) {
+    auto pid = track[pdg_code_].GetInt();
+    if( pid != 2212 )
+      continue;
     auto chi2 = track[chi2_].GetVal();
     auto dca_xy = track[dca_xy_].GetVal();
     auto dca_z = track[dca_z_].GetVal();
-//    if( chi2 > 100.0 )
-//      continue;
-//    if ( -10 > dca_xy || dca_xy > 10 )
-//      continue;
-//    if ( -10 > dca_z || dca_z > 10 )
-//      continue;
-    auto pid = track[pdg_code_].GetInt();
+    if( chi2 > 100.0 )
+      continue;
+    if ( -10 > dca_xy || dca_xy > 10 )
+      continue;
+    if ( -10 > dca_z || dca_z > 10 )
+      continue;
     float p_mass;
     if( TDatabasePDG::Instance()->GetParticle(pid) )
       p_mass = TDatabasePDG::Instance()->GetParticle(pid)->Mass();
@@ -90,19 +98,9 @@ void Yield::UserExec() {
     auto y_tof = track.DataT<Particle>()->GetRapidity() - y_beam_2;
     auto pT = mom4.Pt();
     auto y_pdg = mom4.Rapidity() - y_beam_2;
-    auto E_cm = coshf(y_tof)*sqrtf( p_mass*p_mass + pT*pT );
-    if( pid == 2212 )
-      ecm_pT_y_protons_->Fill( y_pdg, pT, E_cm );
-    if( abs(pid) == 211 )
-      ecm_pT_y_pions_->Fill( y_pdg, pT, E_cm );
-    if( pid != 2212 )
-      continue;
-    histo->Fill(y_pdg, pT);
+    histo_rec_non_uniform->Fill(y_pdg, pT);
+    histo_rec_uniform->Fill(y_pdg, pT);
     rapidity_true_mass_->Fill( y_pdg, y_tof );
-    if( y_pdg < -0.25 )
-      continue;
-    if( y_pdg > -0.15 )
-      continue;
     pt_distribution_reco_->Fill(pT);
   }
   for (auto particle : sim_particles_->Loop()) {
@@ -113,21 +111,29 @@ void Yield::UserExec() {
     auto mass = particle.DataT<Particle>()->GetMass();
     auto mom4 = particle.DataT<Particle>()->Get4MomentumByMass(mass);
     auto y_cm = mom4.Rapidity() - y_beam_2;
-    if( y_cm < -0.25 )
-      continue;
-    if( y_cm > -0.15 )
-      continue;
     pt_distribution_sim_->Fill( mom4.Pt() );
+    histo_gen_non_uniform->Fill(y_cm, mom4.Pt());
+    histo_gen_uniform->Fill(y_cm, mom4.Pt());
   }
 }
 void Yield::UserFinish() {
   centrality_classes_->Write();
-  ecm_pT_y_protons_->Write();
-  ecm_pT_y_pions_->Write();
   pt_distribution_reco_->Write();
   pt_distribution_sim_->Write();
   rapidity_true_mass_->Write();
-  for( auto histo : yields_ ) {
+  for( auto histo : rec_yields_non_uniform_) {
+    histo->Sumw2();
+    histo->Write();
+  }
+  for( auto histo : rec_yields_uniform_) {
+    histo->Sumw2();
+    histo->Write();
+  }
+  for( auto histo : gen_yields_non_uniform_) {
+    histo->Sumw2();
+    histo->Write();
+  }
+  for( auto histo : gen_yields_uniform_) {
     histo->Sumw2();
     histo->Write();
   }
