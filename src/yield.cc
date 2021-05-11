@@ -100,6 +100,8 @@ void Yield::UserExec() {
   auto centrality = (*event_header_)[centrality_var_].GetVal();
   centrality_classes_->Fill( centrality );
   int c_class = (size_t) ( (centrality-2.5)/5.0 );
+  if ( centrality < 0 )
+    return;
   if ( centrality > 60 )
     return;
   float y_beam = data_header_->GetBeamRapidity();
