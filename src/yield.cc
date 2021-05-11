@@ -155,7 +155,11 @@ void Yield::UserExec() {
         continue;
       auto gen_particle = (*sim_particles_)[gen_idx];
       auto gen_pid = gen_particle[sim_pdg_code_var_].GetInt();
+      if( gen_pid != 2212 )
+        continue;
       auto is_prim = gen_particle[is_primary_var_].GetInt();
+      if( !is_prim )
+        continue;
       m2_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, mass2 );
       beta_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, beta );
       dedx_mdc_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, dEdx_mdc );
