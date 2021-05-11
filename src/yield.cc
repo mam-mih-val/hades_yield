@@ -13,107 +13,152 @@ TASK_IMPL(Yield)
 
 boost::program_options::options_description Yield::GetBoostOptions() {
   using namespace boost::program_options;
-
   options_description desc(GetName() + " options");
   return desc;
 }
 
 void Yield::PreInit() {
-  SetInputBranchNames({"mdc_vtx_tracks", "event_header", "sim_tracks"});
+//  SetInputBranchNames({"mdc_vtx_tracks", "event_header", "sim_tracks"});
 }
 
 void Yield::UserInit(std::map<std::string, void *> &Map) {
+  // extracting event variables
   event_header_ = GetInBranch("event_header");
-  centrality_ = GetVar("event_header/selected_tof_rpc_hits_centrality");
-
+  centrality_var_ = GetVar("event_header/selected_tof_rpc_hits_centrality");
+  // extracting tracks variables
   tracks_ = GetInBranch("mdc_vtx_tracks");
-  pdg_code_ = GetVar("mdc_vtx_tracks/pid");
-  dca_xy_ = GetVar("mdc_vtx_tracks/dca_xy");
-  dca_z_ = GetVar("mdc_vtx_tracks/dca_z");
-  chi2_ = GetVar("mdc_vtx_tracks/chi2");
+  charge_var_ = GetVar("mdc_vtx_tracks/charge");
+  pdg_code_var_ = GetVar("mdc_vtx_tracks/pid");
+  dca_xy_var_ = GetVar("mdc_vtx_tracks/dca_xy");
+  dca_z_var_ = GetVar("mdc_vtx_tracks/dca_z");
+  chi2_var_ = GetVar("mdc_vtx_tracks/chi2");
+  dedx_mdc_var_ = GetVar("mdc_vtx_tracks/dEdx");
+  mdc2meta_matching_ = static_cast<AnalysisTree::Matching*>(Map.at("mdc_vtx_tracks2meta_hits"));
+  // extracting meta hits variables
+  meta_hits_ = GetInBranch("meta_hits");
+  mass2_var_ = GetVar("meta_hits/mass2");
+  beta_var_ = GetVar("meta_hits/beta");
+  beta_var_ = GetVar("meta_hits/beta");
+  dedx_meta_var_ = GetVar("meta_hits/dEdx");
 
-  sim_particles_ = GetInBranch("sim_tracks");
-  sim_pdg_code_ = GetVar("sim_tracks/pid");
-  is_primary_ = GetVar("sim_tracks/is_primary");
-  float y_axis[16];
-  for(int j=0; j<16; ++j){ y_axis[j]=-0.75f+0.1f* (float) j; }
-  float pt_axis[]={0, 0.29375, 0.35625, 0.41875, 0.48125, 0.54375, 0.61875, 0.70625, 0.81875, 1.01875, 2.0};
+  try {
+    sim_particles_ = GetInBranch("sim_tracks");
+    is_mc_=true;
+  } catch (std::exception&) {
+    is_mc_=false;
+  }
+  if( is_mc_ ) {
+    sim_particles_ = GetInBranch("sim_tracks");
+    sim_pdg_code_var_ = GetVar("sim_tracks/pid");
+    is_primary_var_ = GetVar("sim_tracks/is_primary");
+    mdc2sim_matching_ = static_cast<AnalysisTree::Matching*>(Map.at("mdc_vtx_tracks2sim_tracks"));
+  }
+  centrality_classes_ = new TH1F( "centrality", ";centrality", 20, 0.0, 100.0 );
   int p=0;
   while(p<60){
-    std::string histo_name{ "rec_yields_non_uniform_"+std::to_string(p)+"-"+std::to_string(p+5) };
-    rec_yields_non_uniform_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, y_axis, 10, pt_axis ) );
-    histo_name =  "rec_yields_uniform_"+std::to_string(p)+"-"+std::to_string(p+5) ;
-    rec_yields_uniform_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, -0.75, 0.75, 16, 0.0, 1.6 ) );
-    histo_name =  "gen_yields_non_uniform_"+std::to_string(p)+"-"+std::to_string(p+5) ;
-    gen_yields_non_uniform_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, y_axis, 10, pt_axis ) );
-    histo_name =  "gen_yields_uniform_"+std::to_string(p)+"-"+std::to_string(p+5) ;
-    gen_yields_uniform_.push_back( new TH2F( histo_name.c_str(), ";y_{cm};pT [GeV/c]", 15, -0.75, 0.75, 16, 0.0, 1.6 ) );
+    // All
+    std::string histo_name{ "m2_vs_pq_all_"+std::to_string(p)+"-"+std::to_string(p+5) };
+    m2_vs_pq_all_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; m^{2} [GeV^{2}/c^{4}]", 300, -2.50, 5.0, 420, -0.5, 10 ) );
+    histo_name =  "beta_vs_pq_all_"+std::to_string(p)+"-"+std::to_string(p+5);
+    beta_vs_pq_all_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; #beta [1/c]", 300, -2.50, 5.0, 550, 0.0, 1.1 ) );
+    histo_name =  "dedx_mdc_vs_pq_all_"+std::to_string(p)+"-"+std::to_string(p+5) ;
+    dedx_mdc_vs_pq_all_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; dE/dx MDC", 300, -2.50, 5.0, 400, 0.0, 20.0 ) );
+    histo_name =  "dedx_meta_vs_pq_all_"+std::to_string(p)+"-"+std::to_string(p+5) ;
+    dedx_meta_vs_pq_all_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; dE/dx META", 300, -2.50, 5.0, 400, 0.0, 20.0 ) );
+    // PID-Reco
+    histo_name = "m2_vs_pq_pid_reco_"+std::to_string(p)+"-"+std::to_string(p+5);
+    m2_vs_pq_pid_reco_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; m^{2} [GeV^{2}/c^{4}]", 300, -2.50, 5.0, 420, -0.5, 10 ) );
+    histo_name =  "beta_vs_pq_pid_reco_"+std::to_string(p)+"-"+std::to_string(p+5);
+    beta_vs_pq_pid_reco_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; #beta [1/c]", 300, -2.50, 5.0, 550, 0.0, 1.1 ) );
+    histo_name =  "dedx_mdc_vs_pq_pid_reco_"+std::to_string(p)+"-"+std::to_string(p+5) ;
+    dedx_mdc_vs_pq_pid_reco_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; dE/dx MDC", 300, -2.50, 5.0, 400, 0.0, 20.0 ) );
+    histo_name =  "dedx_meta_vs_pq_pid_reco_"+std::to_string(p)+"-"+std::to_string(p+5) ;
+    dedx_meta_vs_pq_pid_reco_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; dE/dx META", 300, -2.50, 5.0, 400, 0.0, 20.0 ) );
+    // PDG-Prim
+    if( is_mc_ ) {
+      histo_name =
+          "m2_vs_pq_pdg_prim" + std::to_string(p) + "-" + std::to_string(p + 5);
+      m2_vs_pq_pdg_prim_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; m^{2} [GeV^{2}/c^{4}]",300, -2.50, 5.0, 420, -0.5, 10));
+      histo_name = "beta_vs_pq_pdg_prim_" + std::to_string(p) + "-" + std::to_string(p + 5);
+      beta_vs_pq_pdg_prim_.push_back(new TH2F(histo_name.c_str(),";p/q [GeV/c]; #beta [1/c]", 300,-2.50, 5.0, 550, 0.0, 1.1));
+      histo_name = "dedx_mdc_vs_pq_pdg_prim_" + std::to_string(p) + "-" +std::to_string(p + 5);
+      dedx_mdc_vs_pq_pdg_prim_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; dE/dx MDC", 300, -2.50,5.0, 400, 0.0, 20.0));
+      histo_name = "dedx_meta_vs_pq_pdg_prim_" + std::to_string(p) + "-" +std::to_string(p + 5);
+      dedx_meta_vs_pq_pdg_prim_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; dE/dx META", 300, -2.50,5.0, 400, 0.0, 20.0));
+    }
     p+=5;
   }
   pt_distribution_reco_ = new TH1F( "pT_distribution_reco", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
   pt_distribution_sim_ = new TH1F( "pT_distribution_sim", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
   rapidity_true_mass_ = new TH2F( "y_tof_vs_y_pdg", ";PDG-mass y_{cm};TOF-mass y_{cm};", 200, -1.0, 1.0, 200, -1.0, 1.0 );
-  centrality_classes_ = new TH1F( "centrality", ";centrality", 20, 0.0, 100.0 );
   out_file_->cd();
   std::cout << "Initialized" << std::endl;
 }
 
 void Yield::UserExec() {
   using AnalysisTree::Particle;
-
-  auto centrality = (*event_header_)[centrality_].GetVal();
+  auto centrality = (*event_header_)[centrality_var_].GetVal();
   centrality_classes_->Fill( centrality );
   int c_class = (size_t) ( (centrality-2.5)/5.0 );
-  float y_beam_2 = data_header_->GetBeamRapidity();
-  TH2F* histo_rec_non_uniform{nullptr};
-  TH2F* histo_rec_uniform{nullptr};
-  TH2F* histo_gen_non_uniform{nullptr};
-  TH2F* histo_gen_uniform{nullptr};
-  try {
-    histo_rec_non_uniform = rec_yields_non_uniform_.at(c_class);
-    histo_rec_uniform = rec_yields_uniform_.at(c_class);
-    histo_gen_non_uniform = gen_yields_non_uniform_.at(c_class);
-    histo_gen_uniform = gen_yields_uniform_.at(c_class);
-
-  } catch (std::out_of_range&) { return; }
+  if ( centrality > 60 )
+    return;
+  float y_beam = data_header_->GetBeamRapidity();
+  int track_idx=-1;
   for (auto track : tracks_->Loop()) {
-    auto pid = track[pdg_code_].GetInt();
-    if( pid != 2212 )
-      continue;
-    auto chi2 = track[chi2_].GetVal();
-    auto dca_xy = track[dca_xy_].GetVal();
-    auto dca_z = track[dca_z_].GetVal();
+    track_idx++;
+    auto chi2 = track[chi2_var_].GetVal();
+    auto dca_xy = track[dca_xy_var_].GetVal();
+    auto dca_z = track[dca_z_var_].GetVal();
     if( chi2 > 100.0 )
       continue;
     if ( -10 > dca_xy || dca_xy > 10 )
       continue;
     if ( -10 > dca_z || dca_z > 10 )
       continue;
-    float p_mass;
-    if( TDatabasePDG::Instance()->GetParticle(pid) )
-      p_mass = TDatabasePDG::Instance()->GetParticle(pid)->Mass();
-    else
+    auto meta_idx = mdc2meta_matching_->GetMatchDirect(track_idx);
+    auto meta_hit = (*meta_hits_)[meta_idx];
+    auto pid = track[pdg_code_var_].GetInt();
+    auto charge = track[charge_var_].GetInt();
+    auto dEdx_mdc = track[dedx_mdc_var_].GetVal();
+    auto mass2 = meta_hit[mass2_var_].GetVal();
+    auto beta = meta_hit[beta_var_].GetVal();
+    auto dEdx_meta = meta_hit[dedx_meta_var_].GetVal();
+    auto mass = track.DataT<Particle>()->GetMass();
+    if( pid != 0 ) {
+      if( TDatabasePDG::Instance()->GetParticle(pid) )
+        mass = TDatabasePDG::Instance()->GetParticle(pid)->Mass();
+    }
+    auto mom4 = track.DataT<Particle>()->Get4MomentumByMass(mass);
+    auto p = mom4.P();
+    auto y = mom4.Rapidity() - y_beam;
+    if( mom4.Pt() > 0.6 )
       continue;
-    auto mom4 = track.DataT<Particle>()->Get4MomentumByMass(p_mass);
-    auto y_tof = track.DataT<Particle>()->GetRapidity() - y_beam_2;
-    auto pT = mom4.Pt();
-    auto y_pdg = mom4.Rapidity() - y_beam_2;
-    histo_rec_non_uniform->Fill(y_pdg, pT);
-    histo_rec_uniform->Fill(y_pdg, pT);
-    rapidity_true_mass_->Fill( y_pdg, y_tof );
-    pt_distribution_reco_->Fill(pT);
-  }
-  for (auto particle : sim_particles_->Loop()) {
-    if( particle[sim_pdg_code_].GetInt() != 2212 )
+    if ( fabs(y) > 0.25 )
       continue;
-    if( !particle[is_primary_].GetBool() )
-      continue;
-    auto mass = particle.DataT<Particle>()->GetMass();
-    auto mom4 = particle.DataT<Particle>()->Get4MomentumByMass(mass);
-    auto y_cm = mom4.Rapidity() - y_beam_2;
-    pt_distribution_sim_->Fill( mom4.Pt() );
-    histo_gen_non_uniform->Fill(y_cm, mom4.Pt());
-    histo_gen_uniform->Fill(y_cm, mom4.Pt());
+    // All particles
+    m2_vs_pq_all_.at(c_class)->Fill( p/charge, mass2 );
+    beta_vs_pq_all_.at(c_class)->Fill( p/charge, beta );
+    dedx_mdc_vs_pq_all_.at(c_class)->Fill( p/charge, dEdx_mdc );
+    dedx_meta_vs_pq_all_.at(c_class)->Fill( p/charge, dEdx_meta );
+    // PID-reco
+    if( pid == 2212 ){
+      m2_vs_pq_pid_reco_.at(c_class)->Fill( p/charge, mass2 );
+      beta_vs_pq_pid_reco_.at(c_class)->Fill( p/charge, beta );
+      dedx_mdc_vs_pq_pid_reco_.at(c_class)->Fill( p/charge, dEdx_mdc );
+      dedx_meta_vs_pq_pid_reco_.at(c_class)->Fill( p/charge, dEdx_meta );
+    }
+    if( is_mc_ ){
+      auto gen_idx = mdc2sim_matching_->GetMatchDirect(track_idx);
+      if( gen_idx ==  AnalysisTree::UndefValueInt )
+        continue;
+      auto gen_particle = (*sim_particles_)[gen_idx];
+      auto gen_pid = gen_particle[sim_pdg_code_var_].GetInt();
+      auto is_prim = gen_particle[is_primary_var_].GetInt();
+      m2_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, mass2 );
+      beta_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, beta );
+      dedx_mdc_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, dEdx_mdc );
+      dedx_meta_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, dEdx_meta );
+    }
   }
 }
 void Yield::UserFinish() {
@@ -121,21 +166,23 @@ void Yield::UserFinish() {
   pt_distribution_reco_->Write();
   pt_distribution_sim_->Write();
   rapidity_true_mass_->Write();
-  for( auto histo : rec_yields_non_uniform_) {
-    histo->Sumw2();
-    histo->Write();
-  }
-  for( auto histo : rec_yields_uniform_) {
-    histo->Sumw2();
-    histo->Write();
-  }
-  for( auto histo : gen_yields_non_uniform_) {
-    histo->Sumw2();
-    histo->Write();
-  }
-  for( auto histo : gen_yields_uniform_) {
-    histo->Sumw2();
-    histo->Write();
+  for( size_t i=0; i<m2_vs_pq_all_.size(); ++i ){
+    m2_vs_pq_all_.at(i)->Write();
+    beta_vs_pq_all_.at(i)->Write();
+    dedx_mdc_vs_pq_all_.at(i)->Write();
+    dedx_meta_vs_pq_all_.at(i)->Write();
+
+    m2_vs_pq_pid_reco_.at(i)->Write();
+    beta_vs_pq_pid_reco_.at(i)->Write();
+    dedx_mdc_vs_pq_pid_reco_.at(i)->Write();
+    dedx_meta_vs_pq_pid_reco_.at(i)->Write();
+
+    if( is_mc_ ){
+      m2_vs_pq_pdg_prim_.at(i)->Write();
+      beta_vs_pq_pdg_prim_.at(i)->Write();
+      dedx_mdc_vs_pq_pdg_prim_.at(i)->Write();
+      dedx_meta_vs_pq_pdg_prim_.at(i)->Write();
+    }
   }
   std::cout << "Finished" << std::endl;
 }

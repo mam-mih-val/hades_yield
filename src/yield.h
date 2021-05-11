@@ -11,6 +11,7 @@
 
 #include <AnalysisTree/Detector.hpp>
 #include <AnalysisTree/EventHeader.hpp>
+#include <AnalysisTree/Matching.hpp>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
@@ -32,22 +33,47 @@ public:
   }
 
 private:
+  bool is_mc_;
+
   ATI2::Branch* event_header_;
   ATI2::Branch* tracks_{nullptr};
+  ATI2::Branch* meta_hits_{nullptr};
   ATI2::Branch* sim_particles_{nullptr};
-  ATI2::Variable centrality_;
-  ATI2::Variable pdg_code_;
-  ATI2::Variable dca_xy_;
-  ATI2::Variable dca_z_;
-  ATI2::Variable chi2_;
+  AnalysisTree::Matching* mdc2meta_matching_{nullptr};
+  AnalysisTree::Matching* mdc2sim_matching_{nullptr};
+  // event variables
+  ATI2::Variable centrality_var_;
+  // mdc variables
+  ATI2::Variable charge_var_;
+  ATI2::Variable pdg_code_var_;
+  ATI2::Variable dca_xy_var_;
+  ATI2::Variable dca_z_var_;
+  ATI2::Variable chi2_var_;
+  ATI2::Variable dedx_mdc_var_;
+  // meta variables
+  ATI2::Variable mass2_var_;
+  ATI2::Variable beta_var_;
+  ATI2::Variable dedx_meta_var_;
+  // sim particles variables
+  ATI2::Variable sim_pdg_code_var_;
+  ATI2::Variable is_primary_var_;
 
-  ATI2::Variable sim_pdg_code_;
-  ATI2::Variable is_primary_;
+  // All
+  std::vector<TH2F*> m2_vs_pq_all_;
+  std::vector<TH2F*> beta_vs_pq_all_;
+  std::vector<TH2F*> dedx_mdc_vs_pq_all_;
+  std::vector<TH2F*> dedx_meta_vs_pq_all_;
+  // PID Reco
+  std::vector<TH2F*> m2_vs_pq_pid_reco_;
+  std::vector<TH2F*> beta_vs_pq_pid_reco_;
+  std::vector<TH2F*> dedx_mdc_vs_pq_pid_reco_;
+  std::vector<TH2F*> dedx_meta_vs_pq_pid_reco_;
+  // PDG Prim
+  std::vector<TH2F*> m2_vs_pq_pdg_prim_;
+  std::vector<TH2F*> beta_vs_pq_pdg_prim_;
+  std::vector<TH2F*> dedx_mdc_vs_pq_pdg_prim_;
+  std::vector<TH2F*> dedx_meta_vs_pq_pdg_prim_;
 
-  std::vector<TH2F*> rec_yields_non_uniform_;
-  std::vector<TH2F*> rec_yields_uniform_;
-  std::vector<TH2F*> gen_yields_non_uniform_;
-  std::vector<TH2F*> gen_yields_uniform_;
   TH1F* centrality_classes_;
   TH1F* pt_distribution_reco_;
   TH1F* pt_distribution_sim_;

@@ -3,3 +3,6 @@ target_link_libraries(yield PUBLIC ROOT::EG at_task_main)
 
 add_executable(acceptance acceptance.cc)
 target_link_libraries(acceptance PUBLIC ROOT::EG at_task_main)
+
+add_executable(axes axes.cc)
+target_link_libraries(axes PUBLIC ROOT::EG at_task_main)
