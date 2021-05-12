@@ -40,6 +40,7 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   beta_var_ = GetVar("meta_hits/beta");
   beta_var_ = GetVar("meta_hits/beta");
   dedx_meta_var_ = GetVar("meta_hits/dEdx");
+  is_rpc_hit_var_ = GetVar("meta_hits/is_rpc_hit");
 
   try {
     sim_particles_ = GetInBranch("sim_tracks");
@@ -74,17 +75,16 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
     dedx_mdc_vs_pq_pid_reco_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; dE/dx MDC", 300, -2.50, 5.0, 400, 0.0, 20.0 ) );
     histo_name =  "dedx_meta_vs_pq_pid_reco_"+std::to_string(p)+"-"+std::to_string(p+5) ;
     dedx_meta_vs_pq_pid_reco_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; dE/dx META", 300, -2.50, 5.0, 400, 0.0, 20.0 ) );
-    // PDG-Prim
+    // Mismatch
     if( is_mc_ ) {
-      histo_name =
-          "m2_vs_pq_pdg_prim" + std::to_string(p) + "-" + std::to_string(p + 5);
-      m2_vs_pq_pdg_prim_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; m^{2} [GeV^{2}/c^{4}]",300, -2.50, 5.0, 420, -0.5, 10));
-      histo_name = "beta_vs_pq_pdg_prim_" + std::to_string(p) + "-" + std::to_string(p + 5);
-      beta_vs_pq_pdg_prim_.push_back(new TH2F(histo_name.c_str(),";p/q [GeV/c]; #beta [1/c]", 300,-2.50, 5.0, 550, 0.0, 1.1));
-      histo_name = "dedx_mdc_vs_pq_pdg_prim_" + std::to_string(p) + "-" +std::to_string(p + 5);
-      dedx_mdc_vs_pq_pdg_prim_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; dE/dx MDC", 300, -2.50,5.0, 400, 0.0, 20.0));
-      histo_name = "dedx_meta_vs_pq_pdg_prim_" + std::to_string(p) + "-" +std::to_string(p + 5);
-      dedx_meta_vs_pq_pdg_prim_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; dE/dx META", 300, -2.50,5.0, 400, 0.0, 20.0));
+      histo_name = "m2_vs_pq_mismatch_" + std::to_string(p) + "-" + std::to_string(p + 5);
+      m2_vs_pq_mismatch_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; m^{2} [GeV^{2}/c^{4}]",300, -2.50, 5.0, 420, -0.5, 10));
+      histo_name = "beta_vs_pq_mismatch_" + std::to_string(p) + "-" + std::to_string(p + 5);
+      beta_vs_pq_mismatch_.push_back(new TH2F(histo_name.c_str(),";p/q [GeV/c]; #beta [1/c]", 300,-2.50, 5.0, 550, 0.0, 1.1));
+      histo_name = "dedx_mdc_vs_pq_mismatch_" + std::to_string(p) + "-" +std::to_string(p + 5);
+      dedx_mdc_vs_pq_mismatch_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; dE/dx MDC", 300, -2.50,5.0, 400, 0.0, 20.0));
+      histo_name = "dedx_meta_vs_pq_mismatch_" + std::to_string(p) + "-" +std::to_string(p + 5);
+      dedx_meta_vs_pq_mismatch_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; dE/dx META", 300, -2.50,5.0, 400, 0.0, 20.0));
     }
     p+=5;
   }
@@ -155,15 +155,12 @@ void Yield::UserExec() {
         continue;
       auto gen_particle = (*sim_particles_)[gen_idx];
       auto gen_pid = gen_particle[sim_pdg_code_var_].GetInt();
-      if( gen_pid != 2212 )
-        continue;
-      auto is_prim = gen_particle[is_primary_var_].GetInt();
-      if( !is_prim )
-        continue;
-      m2_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, mass2 );
-      beta_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, beta );
-      dedx_mdc_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, dEdx_mdc );
-      dedx_meta_vs_pq_pdg_prim_.at(c_class)->Fill( p/charge, dEdx_meta );
+      if( pid == 2212 && gen_pid != 2212 ) {
+        m2_vs_pq_mismatch_.at(c_class)->Fill(p / charge, mass2);
+        beta_vs_pq_mismatch_.at(c_class)->Fill(p / charge, beta);
+        dedx_mdc_vs_pq_mismatch_.at(c_class)->Fill(p / charge, dEdx_mdc);
+        dedx_meta_vs_pq_mismatch_.at(c_class)->Fill(p / charge, dEdx_meta);
+      }
     }
   }
 }
@@ -184,10 +181,10 @@ void Yield::UserFinish() {
     dedx_meta_vs_pq_pid_reco_.at(i)->Write();
 
     if( is_mc_ ){
-      m2_vs_pq_pdg_prim_.at(i)->Write();
-      beta_vs_pq_pdg_prim_.at(i)->Write();
-      dedx_mdc_vs_pq_pdg_prim_.at(i)->Write();
-      dedx_meta_vs_pq_pdg_prim_.at(i)->Write();
+      m2_vs_pq_mismatch_.at(i)->Write();
+      beta_vs_pq_mismatch_.at(i)->Write();
+      dedx_mdc_vs_pq_mismatch_.at(i)->Write();
+      dedx_meta_vs_pq_mismatch_.at(i)->Write();
     }
   }
   std::cout << "Finished" << std::endl;

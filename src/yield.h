@@ -54,6 +54,7 @@ private:
   ATI2::Variable mass2_var_;
   ATI2::Variable beta_var_;
   ATI2::Variable dedx_meta_var_;
+  ATI2::Variable is_rpc_hit_var_;
   // sim particles variables
   ATI2::Variable sim_pdg_code_var_;
   ATI2::Variable is_primary_var_;
@@ -68,11 +69,11 @@ private:
   std::vector<TH2F*> beta_vs_pq_pid_reco_;
   std::vector<TH2F*> dedx_mdc_vs_pq_pid_reco_;
   std::vector<TH2F*> dedx_meta_vs_pq_pid_reco_;
-  // PDG Prim
-  std::vector<TH2F*> m2_vs_pq_pdg_prim_;
-  std::vector<TH2F*> beta_vs_pq_pdg_prim_;
-  std::vector<TH2F*> dedx_mdc_vs_pq_pdg_prim_;
-  std::vector<TH2F*> dedx_meta_vs_pq_pdg_prim_;
+  // Mismatch
+  std::vector<TH2F*> m2_vs_pq_mismatch_;
+  std::vector<TH2F*> beta_vs_pq_mismatch_;
+  std::vector<TH2F*> dedx_mdc_vs_pq_mismatch_;
+  std::vector<TH2F*> dedx_meta_vs_pq_mismatch_;
 
   TH1F* centrality_classes_;
   TH1F* pt_distribution_reco_;
