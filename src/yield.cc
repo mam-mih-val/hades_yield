@@ -155,7 +155,7 @@ void Yield::UserExec() {
         continue;
       auto gen_particle = (*sim_particles_)[gen_idx];
       auto gen_pid = gen_particle[sim_pdg_code_var_].GetInt();
-      if( pid == 2212 && gen_pid != 2212 ) {
+      if( pid == 2212 && !gen_particle[is_primary_var_].GetBool() ) {
         m2_vs_pq_mismatch_.at(c_class)->Fill(p / charge, mass2);
         beta_vs_pq_mismatch_.at(c_class)->Fill(p / charge, beta);
         dedx_mdc_vs_pq_mismatch_.at(c_class)->Fill(p / charge, dEdx_mdc);
