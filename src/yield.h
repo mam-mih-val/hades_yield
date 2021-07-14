@@ -64,6 +64,8 @@ private:
   std::vector<TH2F*> beta_vs_pq_all_;
   std::vector<TH2F*> dedx_mdc_vs_pq_all_;
   std::vector<TH2F*> dedx_meta_vs_pq_all_;
+  std::vector<TH2F*> pt_eta_all_;
+  std::vector<TH2F*> sim_pt_eta_all_;
   // PID Reco
   std::vector<TH2F*> m2_vs_pq_pid_reco_;
   std::vector<TH2F*> beta_vs_pq_pid_reco_;
@@ -75,10 +77,15 @@ private:
   std::vector<TH2F*> dedx_mdc_vs_pq_mismatch_;
   std::vector<TH2F*> dedx_meta_vs_pq_mismatch_;
 
+
+  double beta_cm_;
+
   TH1F* centrality_classes_;
   TH1F* pt_distribution_reco_;
   TH1F* pt_distribution_sim_;
   TH2F* rapidity_true_mass_;
+  TH3F* pT_rapidity_eta_;
+  std::vector<TH3F*> pT_rapidity_eta_matricies_;
 
 TASK_DEF(Yield, 0)
 };
