@@ -31,61 +31,42 @@ public:
   void PostFinish() override {
     UserTask::PostFinish();
   }
-
+  std::vector<double> CalculateThetaRange( const std::vector<double>& y_range, const std::vector<double>& pT_range, double m ){
+    std::vector<double> theta_vector;
+    for( auto y : y_range ){
+      for( auto pT : pT_range ){
+        auto sinh_eta = sqrt( m*m + pT*pT )/pT * sinh( y );
+        auto eta = asinh( sinh_eta );
+        auto theta = 2 * atan( exp(-eta) );
+        theta_vector.push_back(theta);
+      }
+    }
+//    for( auto theta : theta_vector ){
+//      std::cout << theta << " ";
+//    }
+//    std::cout << std::endl;
+    auto theta_min = *std::min_element( theta_vector.begin(), theta_vector.end() );
+    auto theta_max = *std::max_element( theta_vector.begin(), theta_vector.end() );
+    return {theta_min, theta_max};
+  }
+  int CalculateNumberOfChargedTracks( std::vector<double> );
 private:
   bool is_mc_;
 
   ATI2::Branch* event_header_;
   ATI2::Branch* tracks_{nullptr};
-  ATI2::Branch* meta_hits_{nullptr};
   ATI2::Branch* sim_particles_{nullptr};
-  AnalysisTree::Matching* mdc2meta_matching_{nullptr};
-  AnalysisTree::Matching* mdc2sim_matching_{nullptr};
-  // event variables
-  ATI2::Variable centrality_var_;
-  // mdc variables
-  ATI2::Variable charge_var_;
-  ATI2::Variable pdg_code_var_;
-  ATI2::Variable dca_xy_var_;
-  ATI2::Variable dca_z_var_;
-  ATI2::Variable chi2_var_;
-  ATI2::Variable dedx_mdc_var_;
-  // meta variables
-  ATI2::Variable mass2_var_;
-  ATI2::Variable beta_var_;
-  ATI2::Variable dedx_meta_var_;
-  ATI2::Variable is_rpc_hit_var_;
-  // sim particles variables
-  ATI2::Variable sim_pdg_code_var_;
-  ATI2::Variable is_primary_var_;
 
-  // All
-  std::vector<TH2F*> m2_vs_pq_all_;
-  std::vector<TH2F*> beta_vs_pq_all_;
-  std::vector<TH2F*> dedx_mdc_vs_pq_all_;
-  std::vector<TH2F*> dedx_meta_vs_pq_all_;
-  std::vector<TH2F*> pt_eta_all_;
-  std::vector<TH2F*> sim_pt_eta_all_;
-  // PID Reco
-  std::vector<TH2F*> m2_vs_pq_pid_reco_;
-  std::vector<TH2F*> beta_vs_pq_pid_reco_;
-  std::vector<TH2F*> dedx_mdc_vs_pq_pid_reco_;
-  std::vector<TH2F*> dedx_meta_vs_pq_pid_reco_;
-  // Mismatch
-  std::vector<TH2F*> m2_vs_pq_mismatch_;
-  std::vector<TH2F*> beta_vs_pq_mismatch_;
-  std::vector<TH2F*> dedx_mdc_vs_pq_mismatch_;
-  std::vector<TH2F*> dedx_meta_vs_pq_mismatch_;
-
+  TH1F* centrality_distribution_;
+  TH3F* rec_y_pT_centrality_;
+  TH3F* tru_y_pT_centrality_;
+  TH1F* rec_pT_multiplicity_midtrapidity_;
+  TH1F* tru_pT_multiplicity_midtrapidity_;
 
   double beta_cm_;
-
-  TH1F* centrality_classes_;
-  TH1F* pt_distribution_reco_;
-  TH1F* pt_distribution_sim_;
-  TH2F* rapidity_true_mass_;
-  TH3F* pT_rapidity_eta_;
-  std::vector<TH3F*> pT_rapidity_eta_matricies_;
+  double ref_mass_;
+  std::vector<double> theta_range_;
+  int reference_pdg_code_;
 
 TASK_DEF(Yield, 0)
 };

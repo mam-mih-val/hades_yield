@@ -14,6 +14,8 @@ TASK_IMPL(Yield)
 boost::program_options::options_description Yield::GetBoostOptions() {
   using namespace boost::program_options;
   options_description desc(GetName() + " options");
+  desc.add_options()
+    ("pdg-code", value(&reference_pdg_code_)->default_value(2212), "PDG-code of particle");
   return desc;
 }
 
@@ -24,198 +26,139 @@ void Yield::PreInit() {
 void Yield::UserInit(std::map<std::string, void *> &Map) {
   // extracting event variables
   event_header_ = GetInBranch("event_header");
-  centrality_var_ = GetVar("event_header/selected_tof_rpc_hits_centrality");
-  // extracting tracks variables
   tracks_ = GetInBranch("mdc_vtx_tracks");
-  charge_var_ = GetVar("mdc_vtx_tracks/charge");
-  pdg_code_var_ = GetVar("mdc_vtx_tracks/pid");
-  dca_xy_var_ = GetVar("mdc_vtx_tracks/dca_xy");
-  dca_z_var_ = GetVar("mdc_vtx_tracks/dca_z");
-  chi2_var_ = GetVar("mdc_vtx_tracks/chi2");
-  dedx_mdc_var_ = GetVar("mdc_vtx_tracks/dEdx");
-  mdc2meta_matching_ = static_cast<AnalysisTree::Matching*>(Map.at("mdc_vtx_tracks2meta_hits"));
-  // extracting meta hits variables
-  meta_hits_ = GetInBranch("meta_hits");
-  mass2_var_ = GetVar("meta_hits/mass2");
-  beta_var_ = GetVar("meta_hits/beta");
-  beta_var_ = GetVar("meta_hits/beta");
-  dedx_meta_var_ = GetVar("meta_hits/dEdx");
-  is_rpc_hit_var_ = GetVar("meta_hits/is_rpc_hit");
+  sim_particles_ = GetInBranch("sim_tracks");
 
-  try {
-    sim_particles_ = GetInBranch("sim_tracks");
-    is_mc_=true;
-  } catch (std::exception&) {
-    is_mc_=false;
-  }
-  if( is_mc_ ) {
-    sim_particles_ = GetInBranch("sim_tracks");
-    sim_pdg_code_var_ = GetVar("sim_tracks/pid");
-    is_primary_var_ = GetVar("sim_tracks/is_primary");
-    mdc2sim_matching_ = static_cast<AnalysisTree::Matching*>(Map.at("mdc_vtx_tracks2sim_tracks"));
-  }
-  centrality_classes_ = new TH1F( "centrality", ";centrality", 20, 0.0, 100.0 );
-  int p=0;
-  while(p<60){
-    // All
-    std::string histo_name{ "m2_vs_pq_all_"+std::to_string(p)+"-"+std::to_string(p+5) };
-    m2_vs_pq_all_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; m^{2} [GeV^{2}/c^{4}]", 300, -2.50, 5.0, 420, -0.5, 10 ) );
-    histo_name =  "beta_vs_pq_all_"+std::to_string(p)+"-"+std::to_string(p+5);
-    beta_vs_pq_all_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; #beta [1/c]", 300, -2.50, 5.0, 550, 0.0, 1.1 ) );
-    histo_name =  "dedx_mdc_vs_pq_all_"+std::to_string(p)+"-"+std::to_string(p+5) ;
-    dedx_mdc_vs_pq_all_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; dE/dx MDC", 300, -2.50, 5.0, 400, 0.0, 20.0 ) );
-    histo_name =  "dedx_meta_vs_pq_all_"+std::to_string(p)+"-"+std::to_string(p+5) ;
-    dedx_meta_vs_pq_all_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; dE/dx META", 300, -2.50, 5.0, 400, 0.0, 20.0 ) );
-    histo_name =  "pT_vs_eta_all_"+std::to_string(p)+"-"+std::to_string(p+5) ;
-    pt_eta_all_.push_back( new TH2F( histo_name.c_str(), ";#eta_{lab};p_{T}/q [GeV/c]", 500, 0.0, 2.5, 400, -1.50, 2.5 )  );
+  centrality_distribution_ = new TH1F( "centrality", ";TOF+RPC hits centrality (%)", 20, 0.0, 100.0 );
 
-    // PID-Reco
-    histo_name = "m2_vs_pq_pid_reco_"+std::to_string(p)+"-"+std::to_string(p+5);
-    m2_vs_pq_pid_reco_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; m^{2} [GeV^{2}/c^{4}]", 300, -2.50, 5.0, 420, -0.5, 10 ) );
-    histo_name =  "beta_vs_pq_pid_reco_"+std::to_string(p)+"-"+std::to_string(p+5);
-    beta_vs_pq_pid_reco_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; #beta [1/c]", 300, -2.50, 5.0, 550, 0.0, 1.1 ) );
-    histo_name =  "dedx_mdc_vs_pq_pid_reco_"+std::to_string(p)+"-"+std::to_string(p+5) ;
-    dedx_mdc_vs_pq_pid_reco_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; dE/dx MDC", 300, -2.50, 5.0, 400, 0.0, 20.0 ) );
-    histo_name =  "dedx_meta_vs_pq_pid_reco_"+std::to_string(p)+"-"+std::to_string(p+5) ;
-    dedx_meta_vs_pq_pid_reco_.push_back( new TH2F( histo_name.c_str(), ";p/q [GeV/c]; dE/dx META", 300, -2.50, 5.0, 400, 0.0, 20.0 ) );
-    histo_name =  "rapidity_pT_eta_"+std::to_string(p)+"-"+std::to_string(p+5) ;
-    pT_rapidity_eta_matricies_.push_back( new TH3F( histo_name.c_str(), ";y_{cm};#eta;p_{T} [GeV/c]", 200, -1.0, 1.0, 350, -2.0, 1.5, 250, 0.0, 2.5 ) );
-    // Mismatch
-    if( is_mc_ ) {
-      histo_name = "m2_vs_pq_mismatch_" + std::to_string(p) + "-" + std::to_string(p + 5);
-      m2_vs_pq_mismatch_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; m^{2} [GeV^{2}/c^{4}]",300, -2.50, 5.0, 420, -0.5, 10));
-      histo_name = "beta_vs_pq_mismatch_" + std::to_string(p) + "-" + std::to_string(p + 5);
-      beta_vs_pq_mismatch_.push_back(new TH2F(histo_name.c_str(),";p/q [GeV/c]; #beta [1/c]", 300,-2.50, 5.0, 550, 0.0, 1.1));
-      histo_name = "dedx_mdc_vs_pq_mismatch_" + std::to_string(p) + "-" +std::to_string(p + 5);
-      dedx_mdc_vs_pq_mismatch_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; dE/dx MDC", 300, -2.50,5.0, 400, 0.0, 20.0));
-      histo_name = "dedx_meta_vs_pq_mismatch_" + std::to_string(p) + "-" +std::to_string(p + 5);
-      dedx_meta_vs_pq_mismatch_.push_back(new TH2F(histo_name.c_str(), ";p/q [GeV/c]; dE/dx META", 300, -2.50,5.0, 400, 0.0, 20.0));
-      histo_name =  "sim_pT_vs_eta_all_"+std::to_string(p)+"-"+std::to_string(p+5) ;
-      sim_pt_eta_all_.push_back( new TH2F( histo_name.c_str(), ";#eta_{lab};p_{T}/q [GeV/c]", 500, 0.0, 2.5, 400, -1.50, 2.5 )  );
-    }
-    p+=5;
+  rec_y_pT_centrality_ = new TH3F( "rec_y_pT_centrality", ";y_{cm};p_{T} [GeV/c];TOF+RPC hits centrality (%)",
+                                  100, -0.85, 1.15,
+                                  125, 0.0, 2.5,
+                                  20, 0, 100);
+  tru_y_pT_centrality_ = new TH3F( "tru_y_pT_centrality", ";y_{cm};p_{T} [GeV/c];TOF+RPC hits centrality (%)",
+                                  100, -0.85, 1.15,
+                                  125, 0.0, 2.5,
+                                  20, 0, 100);
+  std::vector<double> pt_axis;
+  std::vector<double> m0_axis;
+
+  if( abs(reference_pdg_code_) == 2212 ) {
+    pt_axis = {0.0,     0.29375, 0.35625, 0.41875, 0.48125, 0.54375,
+               0.61875, 0.70625, 0.81875, 1.01875, 2.0};
+    for( int i=0; i<40; i+=2 ){m0_axis.push_back(i);}
   }
-  pt_distribution_reco_ = new TH1F( "pT_distribution_reco", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
-  pt_distribution_sim_ = new TH1F( "pT_distribution_sim", ";p_{T} [GeV/c]; entries", 2000, 0, 2.0 );
-  rapidity_true_mass_ = new TH2F( "y_tof_vs_y_pdg", ";PDG-mass y_{cm};TOF-mass y_{cm};", 200, -1.0, 1.0, 200, -1.0, 1.0 );
-  pT_rapidity_eta_ = new TH3F( "pT_rapidity_eta", ";y_{cm};#eta;p_{T} [GeV/c]", 200, -1.0, 1.0, 350, -2.0, 1.5, 250, 0.0, 2.5 );
+  if( abs(reference_pdg_code_) == 211 ) {
+    pt_axis = {0,    0.08, 0.105, 0.13,  0.155, 0.18,
+               0.21, 0.25, 0.315, 0.535, 1.0};
+    for( int i=0; i<30; i+=2 ){m0_axis.push_back(i);}
+  }
+
+  rec_pT_multiplicity_midtrapidity_ = new TH1F( "rec_pT_multiplicity_midtrapidity",
+                                               ";number of charged tracks",
+                                               m0_axis.size()-1, m0_axis.data()
+                                               );
+  tru_pT_multiplicity_midtrapidity_ = new TH1F( "tru_pT_multiplicity_midtrapidity",
+                                               ";p_{T} [GeV/c];number of charged tracks",
+                                               m0_axis.size()-1, m0_axis.data()
+                                               );
   out_file_->cd();
   auto y_cm = data_header_->GetBeamRapidity();
+  std::vector<double> pT_midrapidity;
+  double ref_mass = TDatabasePDG::Instance()->GetParticle( reference_pdg_code_ )->Mass();
+  if( abs(reference_pdg_code_) == 2212 ){
+    pT_midrapidity = {0.35625, 0.41875,};
+  }
+  if( abs(reference_pdg_code_) == 211 ){
+    pT_midrapidity = {0.18, 0.21,};
+  }
+  theta_range_ = CalculateThetaRange( {0.69, 0.79}, pT_midrapidity, ref_mass  );
   beta_cm_ = tanh(y_cm);
   std::cout << "Initialized" << std::endl;
 }
 
 void Yield::UserExec() {
   using AnalysisTree::Particle;
-  auto centrality = (*event_header_)[centrality_var_].GetVal();
-  centrality_classes_->Fill( centrality );
-  int c_class = (size_t) ( (centrality-2.5)/5.0 );
-  if ( centrality < 0 )
-    return;
-  if ( centrality > 60 )
-    return;
+  auto centrality = (*event_header_)[GetVar( "event_header/selected_tof_rpc_hits_centrality" )].GetVal();
   float y_beam = data_header_->GetBeamRapidity();
-  int track_idx=-1;
+  double ref_mass = TDatabasePDG::Instance()->GetParticle( reference_pdg_code_ )->Mass();
+  std::vector<double> pT_midrapidity;
+  if( abs(reference_pdg_code_) == 2212 ){
+    pT_midrapidity = {0.35625, 0.41875,};
+  }
+  if( abs(reference_pdg_code_) == 211 ){
+    pT_midrapidity = {0.18, 0.21,};
+  }
+//  auto theta_range = CalculateThetaRange( {0.69, 0.79}, pT_midrapidity, ref_mass );
+  auto rec_chi2_var = GetVar("mdc_vtx_tracks/chi2");
+  auto rec_dca_xy_var = GetVar("mdc_vtx_tracks/dca_xy");
+  auto rec_dca_z_var = GetVar("mdc_vtx_tracks/dca_z");
+  auto tru_is_primary = GetVar("sim_tracks/is_primary");
+
+  auto n_tracks_in_midrapidity=CalculateNumberOfChargedTracks(theta_range_);
   for (auto track : tracks_->Loop()) {
-    track_idx++;
-    auto pid = track[pdg_code_var_].GetInt();
-    auto charge = track[charge_var_].GetInt();
+    auto pid = track.DataT<Particle>()->GetPid();
     auto mass = track.DataT<Particle>()->GetMass();
     if( pid != 0 ) {
       if( TDatabasePDG::Instance()->GetParticle(pid) )
         mass = TDatabasePDG::Instance()->GetParticle(pid)->Mass();
     }
     auto mom4 = track.DataT<Particle>()->Get4MomentumByMass(mass);
-    pt_eta_all_.at(c_class)->Fill( mom4.PseudoRapidity(), mom4.Pt()/ (double) charge );
-    auto chi2 = track[chi2_var_].GetVal();
-    auto dca_xy = track[dca_xy_var_].GetVal();
-    auto dca_z = track[dca_z_var_].GetVal();
+    auto chi2 = track[rec_chi2_var].GetVal();
+    auto dca_xy = track[rec_dca_xy_var].GetVal();
+    auto dca_z = track[rec_dca_z_var].GetVal();
+    if( pid != reference_pdg_code_ )
+      continue;
     if( chi2 > 100.0 )
       continue;
     if ( -10 > dca_xy || dca_xy > 10 )
       continue;
     if ( -10 > dca_z || dca_z > 10 )
       continue;
-    auto meta_idx = mdc2meta_matching_->GetMatchDirect(track_idx);
-    auto meta_hit = (*meta_hits_)[meta_idx];;
-    auto dEdx_mdc = track[dedx_mdc_var_].GetVal();
-    auto mass2 = meta_hit[mass2_var_].GetVal();
-    auto beta = meta_hit[beta_var_].GetVal();
-    auto dEdx_meta = meta_hit[dedx_meta_var_].GetVal();
-    auto p = mom4.P();
     auto y = mom4.Rapidity() - y_beam;
-    // All particles
-    m2_vs_pq_all_.at(c_class)->Fill( p/charge, mass2 );
-    beta_vs_pq_all_.at(c_class)->Fill( p/charge, beta );
-    dedx_mdc_vs_pq_all_.at(c_class)->Fill( p/charge, dEdx_mdc );
-    dedx_meta_vs_pq_all_.at(c_class)->Fill( p/charge, dEdx_meta );
-    // PID-reco
-    if( pid == 2212 ){
-      m2_vs_pq_pid_reco_.at(c_class)->Fill( p/charge, mass2 );
-      beta_vs_pq_pid_reco_.at(c_class)->Fill( p/charge, beta );
-      dedx_mdc_vs_pq_pid_reco_.at(c_class)->Fill( p/charge, dEdx_mdc );
-      dedx_meta_vs_pq_pid_reco_.at(c_class)->Fill( p/charge, dEdx_meta );
-      auto mom4_cm = mom4;
-      mom4_cm.Boost( {0.0, 0.0, -beta_cm_} );
-      pT_rapidity_eta_->Fill( mom4_cm.Rapidity(), mom4_cm.PseudoRapidity(), mom4_cm.Pt() );
-      pT_rapidity_eta_matricies_.at(c_class)->Fill(mom4_cm.Rapidity(), mom4_cm.PseudoRapidity(), mom4_cm.Pt());
-    }
-    if( is_mc_ ){
-      auto gen_idx = mdc2sim_matching_->GetMatchDirect(track_idx);
-      if( gen_idx ==  AnalysisTree::UndefValueInt )
-        continue;
-      auto gen_particle = (*sim_particles_)[gen_idx];
-      auto gen_pid = gen_particle[sim_pdg_code_var_].GetInt();
-      if( pid == 2212 && !gen_particle[is_primary_var_].GetBool() ) {
-        m2_vs_pq_mismatch_.at(c_class)->Fill(p / charge, mass2);
-        beta_vs_pq_mismatch_.at(c_class)->Fill(p / charge, beta);
-        dedx_mdc_vs_pq_mismatch_.at(c_class)->Fill(p / charge, dEdx_mdc);
-        dedx_meta_vs_pq_mismatch_.at(c_class)->Fill(p / charge, dEdx_meta);
-      }
-    }
+    rec_y_pT_centrality_->Fill( y, mom4.Pt(), centrality );
+    if( -0.05 < y && y < 0.05 )
+      if( pT_midrapidity.front() < mom4.Pt() && mom4.Pt() < pT_midrapidity.back()  )
+        rec_pT_multiplicity_midtrapidity_->Fill( n_tracks_in_midrapidity );
   }
-  if( is_mc_ ){
-    for( auto particle : sim_particles_->Loop() ){
-      auto mass = particle.DataT<Particle>()->GetMass();
-      auto pid = particle.DataT<Particle>()->GetPid();
-      double charge=1.0;
-      if( TDatabasePDG::Instance()->GetParticle( pid ) ){
-        charge= TDatabasePDG::Instance()->GetParticle( pid )->Charge() / 3.0;
-      }
-      auto mom4 = particle.DataT<Particle>()->Get4MomentumByMass(mass);
-      auto pT = mom4.Pt();
-      auto eta = mom4.PseudoRapidity();
-      if( fabs(charge) > std::numeric_limits<double>::min() )
-        sim_pt_eta_all_.at(c_class)->Fill( eta, pT/charge );
-    }
+  for( auto particle : sim_particles_->Loop() ){
+    auto mass = particle.DataT<Particle>()->GetMass();
+    auto pid = particle.DataT<Particle>()->GetPid();
+    auto is_prim = particle[tru_is_primary].GetBool();
+    if( !is_prim )
+      continue;
+    if( pid!=reference_pdg_code_ )
+      continue;
+    auto mom4 = particle.DataT<Particle>()->Get4MomentumByMass(mass);
+    tru_y_pT_centrality_->Fill( mom4.Rapidity() - y_beam, mom4.Pt(), centrality );
+    if( -0.05 < mom4.Rapidity() - y_beam && mom4.Rapidity() - y_beam < 0.05 )
+      if( pT_midrapidity.front() < mom4.Pt() && mom4.Pt() < pT_midrapidity.back()  )
+        tru_pT_multiplicity_midtrapidity_->Fill( n_tracks_in_midrapidity );
   }
+
 }
 void Yield::UserFinish() {
-  centrality_classes_->Write();
-  pt_distribution_reco_->Write();
-  pt_distribution_sim_->Write();
-  rapidity_true_mass_->Write();
-  pT_rapidity_eta_->Write();
-  for( size_t i=0; i<m2_vs_pq_all_.size(); ++i ){
-    m2_vs_pq_all_.at(i)->Write();
-    beta_vs_pq_all_.at(i)->Write();
-    dedx_mdc_vs_pq_all_.at(i)->Write();
-    dedx_meta_vs_pq_all_.at(i)->Write();
-    pt_eta_all_.at(i)->Write();
-
-    m2_vs_pq_pid_reco_.at(i)->Write();
-    beta_vs_pq_pid_reco_.at(i)->Write();
-    dedx_mdc_vs_pq_pid_reco_.at(i)->Write();
-    dedx_meta_vs_pq_pid_reco_.at(i)->Write();
-    pT_rapidity_eta_matricies_.at(i)->Write();
-
-    if( is_mc_ ){
-      m2_vs_pq_mismatch_.at(i)->Write();
-      beta_vs_pq_mismatch_.at(i)->Write();
-      dedx_mdc_vs_pq_mismatch_.at(i)->Write();
-      dedx_meta_vs_pq_mismatch_.at(i)->Write();
-      sim_pt_eta_all_.at(i)->Write();
-    }
-  }
+  centrality_distribution_->Write();
+  rec_pT_multiplicity_midtrapidity_->Write();
+  tru_pT_multiplicity_midtrapidity_->Write();
+  rec_y_pT_centrality_->Write();
+  tru_y_pT_centrality_->Write();
   std::cout << "Finished" << std::endl;
+}
+int Yield::CalculateNumberOfChargedTracks(std::vector<double> theta_range) {
+  using AnalysisTree::Particle;
+  int n_particles=0;
+  for( auto particle : sim_particles_->Loop() ){
+    auto pid = particle.DataT<Particle>()->GetPid();
+    double charge=0.0;
+    if( TDatabasePDG::Instance()->GetParticle( pid ) ){
+      charge= TDatabasePDG::Instance()->GetParticle( pid )->Charge() / 3.0;
+    }
+    if( fabs(charge) < 0.01 )
+      continue;
+    auto mass = particle.DataT<Particle>()->GetMass();
+    auto mom4 = particle.DataT<Particle>()->Get4MomentumByMass(mass);
+    if( theta_range.front() < mom4.Theta() && mom4.Theta() < theta_range.back() )
+      n_particles++;
+  }
+  return n_particles;
 }
