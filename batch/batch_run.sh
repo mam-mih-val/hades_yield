@@ -22,7 +22,7 @@ module load /cvmfs/vae.gsi.de/centos7/modules/linux-centos7-x86_64/gcc-8.1.0-gcc
 echo "loading " $ownroot
 source $ownroot
 
-echo "executing $build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --event-cuts hades/auau/1.23/event_cuts/standard/pt3"
+echo "executing $build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code"
 
 $build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code
 
