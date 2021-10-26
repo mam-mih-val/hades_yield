@@ -2,8 +2,9 @@
 
 file_list=$1
 output_dir=$2
+pdg_code=$3
 
-ownroot=/lustre/nyx/hades/user/mmamaev/install/root-6.18.04/bin/thisroot.sh
+ownroot=/lustre/nyx/hades/user/mmamaev/install/root-6.18.04-debian10-cxx17/bin/thisroot.sh
 
 current_dir=$(pwd)
 partition=main
@@ -30,4 +31,4 @@ echo lists_dir=$lists_dir
 echo n_runs=$n_runs
 echo job_range=$job_range
 
-sbatch -J Yield -p $partition -t $time -a $job_range -e ${log_dir}/%A_%a.e -o ${log_dir}/%A_%a.o --export=output_dir=$output_dir,file_list=$file_list,ownroot=$ownroot,lists_dir=$lists_dir,build_dir=$build_dir -- /cvmfs/vae.gsi.de/debian8/containers/debian8-user_container_20210708T0947.sif /lustre/nyx/hades/user/mmamaev/hades_yield/batch/batch_run.sh
+sbatch -J Yield -p $partition -t $time -a $job_range -e ${log_dir}/%A_%a.e -o ${log_dir}/%A_%a.o --export=output_dir=$output_dir,file_list=$file_list,ownroot=$ownroot,lists_dir=$lists_dir,build_dir=$build_dir,pdg_code=$pdg_code -- /cvmfs/vae.gsi.de/centos7/containers/centos7-user_container_20210930T1200.sif /lustre/nyx/hades/user/mmamaev/hades_yield/batch/batch_run.sh
