@@ -31,4 +31,4 @@ echo lists_dir=$lists_dir
 echo n_runs=$n_runs
 echo job_range=$job_range
 
-sbatch -J Yield -p $partition -t $time -a $job_range -e ${log_dir}/%A_%a.e -o ${log_dir}/%A_%a.o --export=output_dir=$output_dir,file_list=$file_list,ownroot=$ownroot,lists_dir=$lists_dir,build_dir=$build_dir,pdg_code=$pdg_code -- /cvmfs/vae.gsi.de/centos7/containers/centos7-user_container_20210930T1200.sif /lustre/nyx/hades/user/mmamaev/hades_yield/batch/batch_run.sh
+sbatch -J Yield -p $partition -t $time -a $job_range -e ${log_dir}/%A_%a.e -o ${log_dir}/%A_%a.o --export=output_dir=$output_dir,file_list=$file_list,ownroot=$ownroot,lists_dir=$lists_dir,build_dir=$build_dir,pdg_code=$pdg_code -- /cvmfs/vae.gsi.de/centos7/containers/centos7-user_container_20211021T1353.sif /lustre/nyx/hades/user/mmamaev/hades_yield/batch/batch_run.sh
