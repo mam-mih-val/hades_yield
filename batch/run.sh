@@ -4,7 +4,7 @@ file_list=$1
 output_dir=$2
 pdg_code=$3
 
-ownroot=/lustre/nyx/hades/user/mmamaev/install/root-6.18.04-debian10-cxx17/bin/thisroot.sh
+ownroot=/lustre/nyx/hades/user/mmamaev/install/root-6.18.04-centos7-cxx17/bin/thisroot.sh
 
 current_dir=$(pwd)
 partition=main
