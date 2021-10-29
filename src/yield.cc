@@ -41,6 +41,8 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
                                   20, 0, 100);
   std::vector<double> pt_axis;
   std::vector<double> m0_axis;
+  std::vector<double> centrality_axis;
+  for( int i=0; i<21; i++ ){centrality_axis.push_back(i*5.0);}
 
   if( abs(reference_pdg_code_) == 2212 ) {
     pt_axis = {0.0,     0.29375, 0.35625, 0.41875, 0.48125, 0.54375,
@@ -53,13 +55,15 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
     for( int i=0; i<30; i+=2 ){m0_axis.push_back(i);}
   }
 
-  rec_pT_multiplicity_midtrapidity_ = new TH1F( "rec_pT_multiplicity_midtrapidity",
-                                               ";number of charged tracks",
-                                               m0_axis.size()-1, m0_axis.data()
+  rec_pT_multiplicity_midtrapidity_ = new TH2F( "rec_pT_multiplicity_midtrapidity",
+                                               ";number of charged tracks;centrality",
+                                               m0_axis.size()-1, m0_axis.data(),
+                                               centrality_axis.size()-1, centrality_axis.data()
                                                );
-  tru_pT_multiplicity_midtrapidity_ = new TH1F( "tru_pT_multiplicity_midtrapidity",
-                                               ";p_{T} [GeV/c];number of charged tracks",
-                                               m0_axis.size()-1, m0_axis.data()
+  tru_pT_multiplicity_midtrapidity_ = new TH2F( "tru_pT_multiplicity_midtrapidity",
+                                               ";number of charged tracks;centrality",
+                                               m0_axis.size()-1, m0_axis.data(),
+                                               centrality_axis.size()-1, centrality_axis.data()
                                                );
   out_file_->cd();
   auto y_cm = data_header_->GetBeamRapidity();
@@ -79,6 +83,7 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
 void Yield::UserExec() {
   using AnalysisTree::Particle;
   auto centrality = (*event_header_)[GetVar( "event_header/selected_tof_rpc_hits_centrality" )].GetVal();
+  centrality_distribution_->Fill( centrality );
   float y_beam = data_header_->GetBeamRapidity();
   double ref_mass = TDatabasePDG::Instance()->GetParticle( reference_pdg_code_ )->Mass();
   std::vector<double> pT_midrapidity;
@@ -118,7 +123,7 @@ void Yield::UserExec() {
     rec_y_pT_centrality_->Fill( y, mom4.Pt(), centrality );
     if( -0.05 < y && y < 0.05 )
       if( pT_midrapidity.front() < mom4.Pt() && mom4.Pt() < pT_midrapidity.back()  )
-        rec_pT_multiplicity_midtrapidity_->Fill( n_tracks_in_midrapidity );
+        rec_pT_multiplicity_midtrapidity_->Fill( n_tracks_in_midrapidity, centrality );
   }
   for( auto particle : sim_particles_->Loop() ){
     auto mass = particle.DataT<Particle>()->GetMass();
@@ -132,7 +137,7 @@ void Yield::UserExec() {
     tru_y_pT_centrality_->Fill( mom4.Rapidity() - y_beam, mom4.Pt(), centrality );
     if( -0.05 < mom4.Rapidity() - y_beam && mom4.Rapidity() - y_beam < 0.05 )
       if( pT_midrapidity.front() < mom4.Pt() && mom4.Pt() < pT_midrapidity.back()  )
-        tru_pT_multiplicity_midtrapidity_->Fill( n_tracks_in_midrapidity );
+        tru_pT_multiplicity_midtrapidity_->Fill( n_tracks_in_midrapidity, centrality );
   }
 
 }

@@ -60,8 +60,8 @@ private:
   TH1F* centrality_distribution_;
   TH3F* rec_y_pT_centrality_;
   TH3F* tru_y_pT_centrality_;
-  TH1F* rec_pT_multiplicity_midtrapidity_;
-  TH1F* tru_pT_multiplicity_midtrapidity_;
+  TH2F* rec_pT_multiplicity_midtrapidity_;
+  TH2F* tru_pT_multiplicity_midtrapidity_;
 
   double beta_cm_;
   double ref_mass_;
