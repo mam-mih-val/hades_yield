@@ -68,7 +68,7 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
                                                m0_axis.size()-1, m0_axis.data(),
                                                centrality_axis.size()-1, centrality_axis.data()
                                                );
-  v1_all_true_centrality_ = new TProfile( "v1_all_true_centrality", "Centrality (%); v_{1}^{All}", 12, 0.0, 60.0 );
+  v1_all_true_centrality_ = new TProfile( "de_dM_centrality", "Centrality (%); v_{1}^{All}", 12, 0.0, 60.0 );
   out_file_->cd();
   auto y_cm = data_header_->GetBeamRapidity();
   std::vector<double> pT_midrapidity;
@@ -145,7 +145,7 @@ void Yield::UserExec() {
     if(efficiency_histogram_ && centrality < 60 ){
       auto fit = efficiency_fits_.at(c_class);
       auto de_dm = fit->Derivative(n_tracks_in_midrapidity);
-      v1_all_true_centrality_->Fill( centrality, de_dm*n_tracks_in_midrapidity*cos( mom4.Phi() - psi_rp ) );
+      v1_all_true_centrality_->Fill( centrality, de_dm*n_tracks_in_midrapidity );
     }
     if( !is_prim )
       continue;
