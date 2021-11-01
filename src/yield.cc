@@ -15,7 +15,8 @@ boost::program_options::options_description Yield::GetBoostOptions() {
   using namespace boost::program_options;
   options_description desc(GetName() + " options");
   desc.add_options()
-    ("pdg-code", value(&reference_pdg_code_)->default_value(2212), "PDG-code of particle");
+    ("pdg-code", value(&reference_pdg_code_)->default_value(2212), "PDG-code of particle")
+    ("efficiency-file", value(&efficiency_file_path_)->default_value("efficiency.root"), "Path to file with efficiency");
   return desc;
 }
 
@@ -25,7 +26,9 @@ void Yield::PreInit() {
 
 void Yield::UserInit(std::map<std::string, void *> &Map) {
   // extracting event variables
+  this->InitEfficiency();
   event_header_ = GetInBranch("event_header");
+  sim_header_ = GetInBranch("sim_header");
   tracks_ = GetInBranch("mdc_vtx_tracks");
   sim_particles_ = GetInBranch("sim_tracks");
 
@@ -65,6 +68,7 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
                                                m0_axis.size()-1, m0_axis.data(),
                                                centrality_axis.size()-1, centrality_axis.data()
                                                );
+  v1_all_true_centrality_ = new TProfile( "v1_all_true_centrality", "Centrality (%); v_{1}^{All}", 12, 0.0, 60.0 );
   out_file_->cd();
   auto y_cm = data_header_->GetBeamRapidity();
   std::vector<double> pT_midrapidity;
@@ -83,7 +87,9 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
 void Yield::UserExec() {
   using AnalysisTree::Particle;
   auto centrality = (*event_header_)[GetVar( "event_header/selected_tof_rpc_hits_centrality" )].GetVal();
+  auto psi_rp = (*sim_header_)[GetVar( "sim_header/reaction_plane" )].GetVal();
   centrality_distribution_->Fill( centrality );
+  size_t c_class = (size_t) (centrality - 2.5) / 5;
   float y_beam = data_header_->GetBeamRapidity();
   double ref_mass = TDatabasePDG::Instance()->GetParticle( reference_pdg_code_ )->Mass();
   std::vector<double> pT_midrapidity;
@@ -93,7 +99,7 @@ void Yield::UserExec() {
   if( abs(reference_pdg_code_) == 211 ){
     pT_midrapidity = {0.18, 0.21,};
   }
-//  auto theta_range = CalculateThetaRange( {0.69, 0.79}, pT_midrapidity, ref_mass );
+
   auto rec_chi2_var = GetVar("mdc_vtx_tracks/chi2");
   auto rec_dca_xy_var = GetVar("mdc_vtx_tracks/dca_xy");
   auto rec_dca_z_var = GetVar("mdc_vtx_tracks/dca_z");
@@ -111,13 +117,13 @@ void Yield::UserExec() {
     auto chi2 = track[rec_chi2_var].GetVal();
     auto dca_xy = track[rec_dca_xy_var].GetVal();
     auto dca_z = track[rec_dca_z_var].GetVal();
-    if( pid != reference_pdg_code_ )
-      continue;
     if( chi2 > 100.0 )
       continue;
     if ( -10 > dca_xy || dca_xy > 10 )
       continue;
     if ( -10 > dca_z || dca_z > 10 )
+      continue;
+    if( pid != reference_pdg_code_ )
       continue;
     auto y = mom4.Rapidity() - y_beam;
     rec_y_pT_centrality_->Fill( y, mom4.Pt(), centrality );
@@ -129,11 +135,22 @@ void Yield::UserExec() {
     auto mass = particle.DataT<Particle>()->GetMass();
     auto pid = particle.DataT<Particle>()->GetPid();
     auto is_prim = particle[tru_is_primary].GetBool();
+    auto mom4 = particle.DataT<Particle>()->Get4MomentumByMass(mass);
+    double charge=0.0;
+    if( TDatabasePDG::Instance()->GetParticle( pid ) ){
+      charge= TDatabasePDG::Instance()->GetParticle( pid )->Charge() / 3.0;
+    }
+    if( fabs(charge) < 0.01 )
+      continue;
+    if(efficiency_histogram_ && centrality < 60 ){
+      auto fit = efficiency_fits_.at(c_class);
+      auto de_dm = fit->Derivative(n_tracks_in_midrapidity);
+      v1_all_true_centrality_->Fill( centrality, de_dm*n_tracks_in_midrapidity*cos( mom4.Phi() - psi_rp ) );
+    }
     if( !is_prim )
       continue;
     if( pid!=reference_pdg_code_ )
       continue;
-    auto mom4 = particle.DataT<Particle>()->Get4MomentumByMass(mass);
     tru_y_pT_centrality_->Fill( mom4.Rapidity() - y_beam, mom4.Pt(), centrality );
     if( -0.05 < mom4.Rapidity() - y_beam && mom4.Rapidity() - y_beam < 0.05 )
       if( pT_midrapidity.front() < mom4.Pt() && mom4.Pt() < pT_midrapidity.back()  )
@@ -142,11 +159,19 @@ void Yield::UserExec() {
 
 }
 void Yield::UserFinish() {
+  out_file_->cd();
   centrality_distribution_->Write();
   rec_pT_multiplicity_midtrapidity_->Write();
   tru_pT_multiplicity_midtrapidity_->Write();
   rec_y_pT_centrality_->Write();
   tru_y_pT_centrality_->Write();
+  v1_all_true_centrality_->Write();
+  out_file_->mkdir("efficiency_projections");
+  out_file_->cd("efficiency_projections");
+  for (auto proj : efficiency_projections_ ) {
+    proj->Write();
+  }
+  out_file_->cd();
   std::cout << "Finished" << std::endl;
 }
 int Yield::CalculateNumberOfChargedTracks(std::vector<double> theta_range) {
@@ -166,4 +191,24 @@ int Yield::CalculateNumberOfChargedTracks(std::vector<double> theta_range) {
       n_particles++;
   }
   return n_particles;
+}
+void Yield::InitEfficiency() {
+  efficiency_file_ = TFile::Open(efficiency_file_path_.c_str());
+  if( !efficiency_file_ ) {
+    std::cerr << "WARNING: No such file: " << efficiency_file_path_ << std::endl;
+    return;
+  }
+  efficiency_file_->GetObject("efficiency_nparticles_midrapidity", efficiency_histogram_);
+  if( !efficiency_histogram_ ) {
+    std::cerr << "WARNING: No such histogram: efficiency_nparticles_midrapidity in file " << efficiency_file_path_ << std::endl;
+    return;
+  }
+  TH1D* eff_proj;
+  for( int c_bin=1; c_bin<=12; c_bin++ ){
+    std::string proj_name = "efficiency_proj_"+std::to_string(c_bin);
+    eff_proj = efficiency_histogram_->ProjectionX( proj_name.c_str(), c_bin, c_bin );
+    eff_proj->Fit("pol3");
+    efficiency_projections_.push_back( eff_proj );
+    efficiency_fits_.push_back( dynamic_cast<TF1*>(eff_proj->GetListOfFunctions()->First()) );
+  }
 }

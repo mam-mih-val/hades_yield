@@ -8,6 +8,8 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TH2F.h>
+#include <TProfile.h>
+#include <TF1.h>
 
 #include <AnalysisTree/Detector.hpp>
 #include <AnalysisTree/EventHeader.hpp>
@@ -41,19 +43,17 @@ public:
         theta_vector.push_back(theta);
       }
     }
-//    for( auto theta : theta_vector ){
-//      std::cout << theta << " ";
-//    }
-//    std::cout << std::endl;
     auto theta_min = *std::min_element( theta_vector.begin(), theta_vector.end() );
     auto theta_max = *std::max_element( theta_vector.begin(), theta_vector.end() );
     return {theta_min, theta_max};
   }
   int CalculateNumberOfChargedTracks( std::vector<double> );
 private:
+  void InitEfficiency();
   bool is_mc_;
 
   ATI2::Branch* event_header_;
+  ATI2::Branch* sim_header_;
   ATI2::Branch* tracks_{nullptr};
   ATI2::Branch* sim_particles_{nullptr};
 
@@ -63,10 +63,18 @@ private:
   TH2F* rec_pT_multiplicity_midtrapidity_;
   TH2F* tru_pT_multiplicity_midtrapidity_;
 
+  TProfile* v1_all_true_centrality_;
+
   double beta_cm_;
   double ref_mass_;
   std::vector<double> theta_range_;
   int reference_pdg_code_;
+
+  std::string efficiency_file_path_;
+  TFile* efficiency_file_;
+  TH2F* efficiency_histogram_{nullptr};
+  std::vector<TF1*> efficiency_fits_;
+  std::vector<TH1D*> efficiency_projections_;
 
 TASK_DEF(Yield, 0)
 };
