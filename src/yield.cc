@@ -39,7 +39,7 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   std::vector<double> phi_axis;
   std::vector<double> npart_sector_axis;
 
-  for( int i=0; i<40; i++ ){npart_sector_axis.push_back(i);}
+  for( int i=0; i<70; i++ ){npart_sector_axis.push_back(i);}
   for( int i=0; i<7; i++ ){phi_axis.push_back(-M_PI+(i*2*M_PI)/6.0);}
 
   if( abs(reference_pdg_code_) == 2212 ) {
@@ -110,7 +110,7 @@ void Yield::UserExec() {
     if( pid != reference_pdg_code_ )
       continue;
     auto y = mom4.Rapidity() - y_beam;
-    h3_rec_y_pT_phi_->Fill( y, mom4.Pt(), mom4.Pt() );
+    h3_rec_y_pT_phi_->Fill( mom4.Rapidity() - y_beam, mom4.Pt(), mom4.Phi() );
   }
   int n_charged_tracks=0;
   for( auto particle : sim_particles_->Loop() ){
