@@ -9,6 +9,7 @@
 #include <TTree.h>
 #include <TH2F.h>
 #include <TProfile.h>
+#include <TProfile3D.h>
 #include <TF1.h>
 
 #include <AnalysisTree/Detector.hpp>
@@ -17,7 +18,6 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
-#include <TProfile.h>
 #include <at_task/Task.h>
 #include <memory>
 #include <string>
@@ -50,31 +50,22 @@ public:
   int CalculateNumberOfChargedTracks( std::vector<double> );
 private:
   void InitEfficiency();
-  bool is_mc_;
 
   ATI2::Branch* event_header_;
   ATI2::Branch* sim_header_;
   ATI2::Branch* tracks_{nullptr};
   ATI2::Branch* sim_particles_{nullptr};
 
-  TH1F* centrality_distribution_;
-  TH3F* rec_y_pT_centrality_;
-  TH3F* tru_y_pT_centrality_;
-  TH2F* rec_pT_multiplicity_midtrapidity_;
-  TH2F* tru_pT_multiplicity_midtrapidity_;
-
-  TProfile* v1_all_true_centrality_;
+  TH1F* h1_centrality_;
+  TH1F* h1_phi_all_;
+  TH3F* h3_tru_y_pT_phi_;
+  TH3F* h3_rec_y_pT_phi_;
+  TProfile3D* p3_y_pT_npart_sector_;
 
   double beta_cm_;
   double ref_mass_;
-  std::vector<double> theta_range_;
-  int reference_pdg_code_;
 
-  std::string efficiency_file_path_;
-  TFile* efficiency_file_;
-  TH2F* efficiency_histogram_{nullptr};
-  std::vector<TF1*> efficiency_fits_;
-  std::vector<TH1D*> efficiency_projections_;
+  int reference_pdg_code_;
 
 TASK_DEF(Yield, 0)
 };

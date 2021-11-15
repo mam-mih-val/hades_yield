@@ -15,8 +15,7 @@ boost::program_options::options_description Yield::GetBoostOptions() {
   using namespace boost::program_options;
   options_description desc(GetName() + " options");
   desc.add_options()
-    ("pdg-code", value(&reference_pdg_code_)->default_value(2212), "PDG-code of particle")
-    ("efficiency-file", value(&efficiency_file_path_)->default_value("efficiency.root"), "Path to file with efficiency");
+    ("pdg-code", value(&reference_pdg_code_)->default_value(2212), "PDG-code of particle");
   return desc;
 }
 
@@ -32,80 +31,64 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   tracks_ = GetInBranch("mdc_vtx_tracks");
   sim_particles_ = GetInBranch("sim_tracks");
 
-  centrality_distribution_ = new TH1F( "centrality", ";TOF+RPC hits centrality (%)", 20, 0.0, 100.0 );
+  h1_centrality_ = new TH1F( "centrality", ";TOF+RPC hits centrality (%)", 20, 0.0, 100.0 );
+  h1_phi_all_ = new TH1F( "phi_event_by_event", ";#phi;N particles in event", 6, -M_PI, M_PI );
 
-  rec_y_pT_centrality_ = new TH3F( "rec_y_pT_centrality", ";y_{cm};p_{T} [GeV/c];TOF+RPC hits centrality (%)",
-                                  100, -0.85, 1.15,
-                                  125, 0.0, 2.5,
-                                  20, 0, 100);
-  tru_y_pT_centrality_ = new TH3F( "tru_y_pT_centrality", ";y_{cm};p_{T} [GeV/c];TOF+RPC hits centrality (%)",
-                                  100, -0.85, 1.15,
-                                  125, 0.0, 2.5,
-                                  20, 0, 100);
   std::vector<double> pt_axis;
-  std::vector<double> m0_axis;
-  std::vector<double> centrality_axis;
-  for( int i=0; i<21; i++ ){centrality_axis.push_back(i*5.0);}
+  std::vector<double> y_axis;
+  std::vector<double> phi_axis;
+  std::vector<double> npart_sector_axis;
+
+  for( int i=0; i<40; i++ ){npart_sector_axis.push_back(i);}
+  for( int i=0; i<7; i++ ){phi_axis.push_back(-M_PI+(i*2*M_PI)/6.0);}
 
   if( abs(reference_pdg_code_) == 2212 ) {
     pt_axis = {0.0,     0.29375, 0.35625, 0.41875, 0.48125, 0.54375,
                0.61875, 0.70625, 0.81875, 1.01875, 2.0};
-    for( int i=0; i<40; i+=2 ){m0_axis.push_back(i);}
+    for( int i=0; i<16; i+=1 ){ y_axis.push_back(-0.75+i*0.1); }
   }
   if( abs(reference_pdg_code_) == 211 ) {
     pt_axis = {0,    0.08, 0.105, 0.13,  0.155, 0.18,
                0.21, 0.25, 0.315, 0.535, 1.0};
-    for( int i=0; i<30; i+=2 ){m0_axis.push_back(i);}
+    for( int i=0; i<18; i+=1 ){y_axis.push_back(-0.65+i*0.1);}
   }
-
-  rec_pT_multiplicity_midtrapidity_ = new TH2F( "rec_pT_multiplicity_midtrapidity",
-                                               ";number of charged tracks;centrality",
-                                               m0_axis.size()-1, m0_axis.data(),
-                                               centrality_axis.size()-1, centrality_axis.data()
-                                               );
-  tru_pT_multiplicity_midtrapidity_ = new TH2F( "tru_pT_multiplicity_midtrapidity",
-                                               ";number of charged tracks;centrality",
-                                               m0_axis.size()-1, m0_axis.data(),
-                                               centrality_axis.size()-1, centrality_axis.data()
-                                               );
-  v1_all_true_centrality_ = new TProfile( "de_dM_centrality", "Centrality (%); v_{1}^{All}", 12, 0.0, 60.0 );
-  out_file_->cd();
+  h3_rec_y_pT_phi_ = new TH3F( "h3_rec_y_pT_phi", ";y_{cm};p_{T} [GeV/c];#phi [rad]",
+                              y_axis.size()-1, y_axis.data(),
+                              pt_axis.size()-1, pt_axis.data(),
+                              phi_axis.size()-1, phi_axis.data());
+  h3_tru_y_pT_phi_ = new TH3F( "h3_tru_y_pT_phi", ";y_{cm};p_{T} [GeV/c];#phi [rad]",
+                              y_axis.size()-1, y_axis.data(),
+                              pt_axis.size()-1, pt_axis.data(),
+                              phi_axis.size()-1, phi_axis.data());
+  p3_y_pT_npart_sector_ = new TProfile3D( "p3_y_pT_npart_sector", ";y_{cm};p_{T} [GeV/c];N particles in sector",
+                                         y_axis.size()-1, y_axis.data(),
+                                         pt_axis.size()-1, pt_axis.data(),
+                                         npart_sector_axis.size()-1, npart_sector_axis.data());
   auto y_cm = data_header_->GetBeamRapidity();
   std::vector<double> pT_midrapidity;
-  double ref_mass = TDatabasePDG::Instance()->GetParticle( reference_pdg_code_ )->Mass();
-  if( abs(reference_pdg_code_) == 2212 ){
-    pT_midrapidity = {0.35625, 0.41875,};
-  }
-  if( abs(reference_pdg_code_) == 211 ){
-    pT_midrapidity = {0.18, 0.21,};
-  }
-  theta_range_ = CalculateThetaRange( {0.69, 0.79}, pT_midrapidity, ref_mass  );
   beta_cm_ = tanh(y_cm);
+  out_file_->cd();
   std::cout << "Initialized" << std::endl;
 }
 
 void Yield::UserExec() {
   using AnalysisTree::Particle;
+  // Reseting all of the event by event histograms
+  h1_phi_all_->Reset();
+  h3_rec_y_pT_phi_->Reset();
+  h3_tru_y_pT_phi_->Reset();
+
   auto centrality = (*event_header_)[GetVar( "event_header/selected_tof_rpc_hits_centrality" )].GetVal();
-  auto psi_rp = (*sim_header_)[GetVar( "sim_header/reaction_plane" )].GetVal();
-  centrality_distribution_->Fill( centrality );
-  size_t c_class = (size_t) (centrality - 2.5) / 5;
+  h1_centrality_->Fill( centrality );
   float y_beam = data_header_->GetBeamRapidity();
-  double ref_mass = TDatabasePDG::Instance()->GetParticle( reference_pdg_code_ )->Mass();
   std::vector<double> pT_midrapidity;
-  if( abs(reference_pdg_code_) == 2212 ){
-    pT_midrapidity = {0.35625, 0.41875,};
-  }
-  if( abs(reference_pdg_code_) == 211 ){
-    pT_midrapidity = {0.18, 0.21,};
-  }
+  h1_centrality_->Fill(centrality);
 
   auto rec_chi2_var = GetVar("mdc_vtx_tracks/chi2");
   auto rec_dca_xy_var = GetVar("mdc_vtx_tracks/dca_xy");
   auto rec_dca_z_var = GetVar("mdc_vtx_tracks/dca_z");
   auto tru_is_primary = GetVar("sim_tracks/is_primary");
 
-  auto n_tracks_in_midrapidity=CalculateNumberOfChargedTracks(theta_range_);
   for (auto track : tracks_->Loop()) {
     auto pid = track.DataT<Particle>()->GetPid();
     auto mass = track.DataT<Particle>()->GetMass();
@@ -117,6 +100,7 @@ void Yield::UserExec() {
     auto chi2 = track[rec_chi2_var].GetVal();
     auto dca_xy = track[rec_dca_xy_var].GetVal();
     auto dca_z = track[rec_dca_z_var].GetVal();
+
     if( chi2 > 100.0 )
       continue;
     if ( -10 > dca_xy || dca_xy > 10 )
@@ -126,11 +110,9 @@ void Yield::UserExec() {
     if( pid != reference_pdg_code_ )
       continue;
     auto y = mom4.Rapidity() - y_beam;
-    rec_y_pT_centrality_->Fill( y, mom4.Pt(), centrality );
-    if( -0.05 < y && y < 0.05 )
-      if( pT_midrapidity.front() < mom4.Pt() && mom4.Pt() < pT_midrapidity.back()  )
-        rec_pT_multiplicity_midtrapidity_->Fill( n_tracks_in_midrapidity, centrality );
+    h3_rec_y_pT_phi_->Fill( y, mom4.Pt(), mom4.Pt() );
   }
+  int n_charged_tracks=0;
   for( auto particle : sim_particles_->Loop() ){
     auto mass = particle.DataT<Particle>()->GetMass();
     auto pid = particle.DataT<Particle>()->GetPid();
@@ -142,36 +124,39 @@ void Yield::UserExec() {
     }
     if( fabs(charge) < 0.01 )
       continue;
-    if(efficiency_histogram_ && centrality < 60 ){
-      auto fit = efficiency_fits_.at(c_class);
-      auto de_dm = fit->Derivative(n_tracks_in_midrapidity);
-      v1_all_true_centrality_->Fill( centrality, de_dm*n_tracks_in_midrapidity );
-    }
+    h1_phi_all_->Fill( mom4.Phi() );
     if( !is_prim )
       continue;
     if( pid!=reference_pdg_code_ )
       continue;
-    tru_y_pT_centrality_->Fill( mom4.Rapidity() - y_beam, mom4.Pt(), centrality );
-    if( -0.05 < mom4.Rapidity() - y_beam && mom4.Rapidity() - y_beam < 0.05 )
-      if( pT_midrapidity.front() < mom4.Pt() && mom4.Pt() < pT_midrapidity.back()  )
-        tru_pT_multiplicity_midtrapidity_->Fill( n_tracks_in_midrapidity, centrality );
+    h3_tru_y_pT_phi_->Fill( mom4.Rapidity() - y_beam, mom4.Pt(), mom4.Phi() );
+  }
+  for( int sector=0; sector<6; sector++ ){
+    double npart_sector = h1_phi_all_->GetBinContent(sector+1);
+    for( int y_bin=0; y_bin<h3_tru_y_pT_phi_->GetNbinsX(); y_bin++ ){
+      auto y_mean = h3_tru_y_pT_phi_->GetXaxis()->GetBinCenter(y_bin+1);
+      for (int pT_bin = 0; pT_bin < h3_tru_y_pT_phi_->GetNbinsY(); ++pT_bin) {
+        double pT_mean = h3_tru_y_pT_phi_->GetYaxis()->GetBinCenter(pT_bin+1);
+        double tru_npart_bin = h3_tru_y_pT_phi_->GetBinContent( y_bin+1, pT_bin+1, sector+1 );
+        if( fabs(tru_npart_bin) < 0.01 )
+          continue;
+        auto rec_npart_bin = h3_rec_y_pT_phi_->GetBinContent( y_bin+1, pT_bin+1, sector+1 );
+        auto efficiency = rec_npart_bin / tru_npart_bin;
+        p3_y_pT_npart_sector_->Fill( y_mean, pT_mean, npart_sector-tru_npart_bin, efficiency );
+      }
+    }
   }
 
 }
 void Yield::UserFinish() {
   out_file_->cd();
-  centrality_distribution_->Write();
-  rec_pT_multiplicity_midtrapidity_->Write();
-  tru_pT_multiplicity_midtrapidity_->Write();
-  rec_y_pT_centrality_->Write();
-  tru_y_pT_centrality_->Write();
-  v1_all_true_centrality_->Write();
-  out_file_->mkdir("efficiency_projections");
-  out_file_->cd("efficiency_projections");
-  for (auto proj : efficiency_projections_ ) {
-    proj->Write();
-  }
+  h1_centrality_->Write();
+
+//  out_file_->mkdir("efficiency_projections");
+//  out_file_->cd("efficiency_projections");
+
   out_file_->cd();
+  p3_y_pT_npart_sector_->Write();
   std::cout << "Finished" << std::endl;
 }
 int Yield::CalculateNumberOfChargedTracks(std::vector<double> theta_range) {
@@ -193,22 +178,5 @@ int Yield::CalculateNumberOfChargedTracks(std::vector<double> theta_range) {
   return n_particles;
 }
 void Yield::InitEfficiency() {
-  efficiency_file_ = TFile::Open(efficiency_file_path_.c_str());
-  if( !efficiency_file_ ) {
-    std::cerr << "WARNING: No such file: " << efficiency_file_path_ << std::endl;
-    return;
-  }
-  efficiency_file_->GetObject("efficiency_nparticles_midrapidity", efficiency_histogram_);
-  if( !efficiency_histogram_ ) {
-    std::cerr << "WARNING: No such histogram: efficiency_nparticles_midrapidity in file " << efficiency_file_path_ << std::endl;
-    return;
-  }
-  TH1D* eff_proj;
-  for( int c_bin=1; c_bin<=12; c_bin++ ){
-    std::string proj_name = "efficiency_proj_"+std::to_string(c_bin);
-    eff_proj = efficiency_histogram_->ProjectionX( proj_name.c_str(), c_bin, c_bin );
-    eff_proj->Fit("pol3");
-    efficiency_projections_.push_back( eff_proj );
-    efficiency_fits_.push_back( dynamic_cast<TF1*>(eff_proj->GetListOfFunctions()->First()) );
-  }
+
 }
