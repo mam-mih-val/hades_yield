@@ -57,10 +57,10 @@ private:
   ATI2::Branch* sim_particles_{nullptr};
 
   TH1F* h1_centrality_;
-  TH1F* h1_phi_all_;
-  TH3F* h3_tru_y_pT_phi_;
-  TH3F* h3_rec_y_pT_phi_;
-  TProfile3D* p3_y_pT_npart_sector_;
+  TH2F* h1_phi_theta_all_;
+  TH3F* h3_tru_theta_pT_phi_;
+  TH3F* h3_rec_theta_pT_phi_;
+  TProfile3D* p3_theta_pT_npart_sector_;
 
   double beta_cm_;
   double ref_mass_;

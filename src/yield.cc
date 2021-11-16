@@ -32,38 +32,38 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   sim_particles_ = GetInBranch("sim_tracks");
 
   h1_centrality_ = new TH1F( "centrality", ";TOF+RPC hits centrality (%)", 20, 0.0, 100.0 );
-  h1_phi_all_ = new TH1F( "phi_event_by_event", ";#phi;N particles in event", 6, -M_PI, M_PI );
+  h1_phi_theta_all_ = new TH2F( "phi_theta_event_by_event", ";#phi;N particles in event", 6, -M_PI, M_PI, 6, 0.3, 1.5 );
 
   std::vector<double> pt_axis;
-  std::vector<double> y_axis;
+  std::vector<double> theta_axis;
   std::vector<double> phi_axis;
   std::vector<double> npart_sector_axis;
 
-  for( int i=0; i<70; i++ ){npart_sector_axis.push_back(i);}
+  for( int i=0; i<20; i++ ){npart_sector_axis.push_back(i);}
   for( int i=0; i<7; i++ ){phi_axis.push_back(-M_PI+(i*2*M_PI)/6.0);}
+  for( int i=0; i<25; i+=1 ){theta_axis.push_back(0.3+i*0.05); }
 
   if( abs(reference_pdg_code_) == 2212 ) {
     pt_axis = {0.0,     0.29375, 0.35625, 0.41875, 0.48125, 0.54375,
                0.61875, 0.70625, 0.81875, 1.01875, 2.0};
-    for( int i=0; i<16; i+=1 ){ y_axis.push_back(-0.75+i*0.1); }
+
   }
   if( abs(reference_pdg_code_) == 211 ) {
     pt_axis = {0,    0.08, 0.105, 0.13,  0.155, 0.18,
                0.21, 0.25, 0.315, 0.535, 1.0};
-    for( int i=0; i<18; i+=1 ){y_axis.push_back(-0.65+i*0.1);}
   }
-  h3_rec_y_pT_phi_ = new TH3F( "h3_rec_y_pT_phi", ";y_{cm};p_{T} [GeV/c];#phi [rad]",
-                              y_axis.size()-1, y_axis.data(),
-                              pt_axis.size()-1, pt_axis.data(),
-                              phi_axis.size()-1, phi_axis.data());
-  h3_tru_y_pT_phi_ = new TH3F( "h3_tru_y_pT_phi", ";y_{cm};p_{T} [GeV/c];#phi [rad]",
-                              y_axis.size()-1, y_axis.data(),
-                              pt_axis.size()-1, pt_axis.data(),
-                              phi_axis.size()-1, phi_axis.data());
-  p3_y_pT_npart_sector_ = new TProfile3D( "p3_y_pT_npart_sector", ";y_{cm};p_{T} [GeV/c];N particles in sector",
-                                         y_axis.size()-1, y_axis.data(),
-                                         pt_axis.size()-1, pt_axis.data(),
-                                         npart_sector_axis.size()-1, npart_sector_axis.data());
+  h3_rec_theta_pT_phi_ = new TH3F( "h3_rec_theta_pT_phi", ";#theta [rad];p_{T} [GeV/c];#phi [rad]",
+                                  theta_axis.size()-1, theta_axis.data(),
+                                  pt_axis.size()-1, pt_axis.data(),
+                                  phi_axis.size()-1, phi_axis.data());
+  h3_tru_theta_pT_phi_ = new TH3F( "h3_tru_theta_pT_phi", ";#theta [rad];p_{T} [GeV/c];#phi [rad]",
+                                  theta_axis.size()-1, theta_axis.data(),
+                                  pt_axis.size()-1, pt_axis.data(),
+                                  phi_axis.size()-1, phi_axis.data());
+  p3_theta_pT_npart_sector_ = new TProfile3D( "p3_theta_pT_npart_sector", ";#theta [rad];p_{T} [GeV/c];N particles in sector",
+                                             theta_axis.size()-1, theta_axis.data(),
+                                             pt_axis.size()-1, pt_axis.data(),
+                                             npart_sector_axis.size()-1, npart_sector_axis.data());
   auto y_cm = data_header_->GetBeamRapidity();
   std::vector<double> pT_midrapidity;
   beta_cm_ = tanh(y_cm);
@@ -74,9 +74,9 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
 void Yield::UserExec() {
   using AnalysisTree::Particle;
   // Reseting all of the event by event histograms
-  h1_phi_all_->Reset();
-  h3_rec_y_pT_phi_->Reset();
-  h3_tru_y_pT_phi_->Reset();
+  h1_phi_theta_all_->Reset();
+  h3_rec_theta_pT_phi_->Reset();
+  h3_tru_theta_pT_phi_->Reset();
 
   auto centrality = (*event_header_)[GetVar( "event_header/selected_tof_rpc_hits_centrality" )].GetVal();
   h1_centrality_->Fill( centrality );
@@ -110,7 +110,7 @@ void Yield::UserExec() {
     if( pid != reference_pdg_code_ )
       continue;
     auto y = mom4.Rapidity() - y_beam;
-    h3_rec_y_pT_phi_->Fill( mom4.Rapidity() - y_beam, mom4.Pt(), mom4.Phi() );
+    h3_rec_theta_pT_phi_->Fill( mom4.Theta(), mom4.Pt(), mom4.Phi() );
   }
   int n_charged_tracks=0;
   for( auto particle : sim_particles_->Loop() ){
@@ -124,25 +124,26 @@ void Yield::UserExec() {
     }
     if( fabs(charge) < 0.01 )
       continue;
-    h1_phi_all_->Fill( mom4.Phi() );
+    h1_phi_theta_all_->Fill( mom4.Phi(), mom4.Theta() );
     if( !is_prim )
       continue;
     if( pid!=reference_pdg_code_ )
       continue;
-    h3_tru_y_pT_phi_->Fill( mom4.Rapidity() - y_beam, mom4.Pt(), mom4.Phi() );
+    h3_tru_theta_pT_phi_->Fill( mom4.Theta(), mom4.Pt(), mom4.Phi() );
   }
   for( int sector=0; sector<6; sector++ ){
-    double npart_sector = h1_phi_all_->GetBinContent(sector+1);
-    for( int y_bin=0; y_bin<h3_tru_y_pT_phi_->GetNbinsX(); y_bin++ ){
-      auto y_mean = h3_tru_y_pT_phi_->GetXaxis()->GetBinCenter(y_bin+1);
-      for (int pT_bin = 0; pT_bin < h3_tru_y_pT_phi_->GetNbinsY(); ++pT_bin) {
-        double pT_mean = h3_tru_y_pT_phi_->GetYaxis()->GetBinCenter(pT_bin+1);
-        double tru_npart_bin = h3_tru_y_pT_phi_->GetBinContent( y_bin+1, pT_bin+1, sector+1 );
+    for( int theta_bin =0; theta_bin < h3_tru_theta_pT_phi_->GetNbinsX();theta_bin++ ){
+      auto theta_mean = h3_tru_theta_pT_phi_->GetXaxis()->GetBinCenter(theta_bin +1);
+      auto theta_bin_all = h1_phi_theta_all_->GetYaxis()->FindBin( theta_mean );
+      double npart_sector = h1_phi_theta_all_->GetBinContent(sector+1, theta_bin_all);
+      for (int pT_bin = 0; pT_bin < h3_tru_theta_pT_phi_->GetNbinsY(); ++pT_bin) {
+        double pT_mean = h3_tru_theta_pT_phi_->GetYaxis()->GetBinCenter(pT_bin+1);
+        double tru_npart_bin = h3_tru_theta_pT_phi_->GetBinContent(theta_bin +1, pT_bin+1, sector+1 );
         if( fabs(tru_npart_bin) < 0.01 )
           continue;
-        auto rec_npart_bin = h3_rec_y_pT_phi_->GetBinContent( y_bin+1, pT_bin+1, sector+1 );
+        auto rec_npart_bin = h3_rec_theta_pT_phi_->GetBinContent(theta_bin +1, pT_bin+1, sector+1 );
         auto efficiency = rec_npart_bin / tru_npart_bin;
-        p3_y_pT_npart_sector_->Fill( y_mean, pT_mean, npart_sector-tru_npart_bin, efficiency );
+        p3_theta_pT_npart_sector_->Fill(theta_mean, pT_mean, npart_sector-tru_npart_bin, efficiency );
       }
     }
   }
@@ -156,7 +157,7 @@ void Yield::UserFinish() {
 //  out_file_->cd("efficiency_projections");
 
   out_file_->cd();
-  p3_y_pT_npart_sector_->Write();
+  p3_theta_pT_npart_sector_->Write();
   std::cout << "Finished" << std::endl;
 }
 int Yield::CalculateNumberOfChargedTracks(std::vector<double> theta_range) {
