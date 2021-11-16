@@ -32,7 +32,7 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   sim_particles_ = GetInBranch("sim_tracks");
 
   h1_centrality_ = new TH1F( "centrality", ";TOF+RPC hits centrality (%)", 20, 0.0, 100.0 );
-  h1_phi_theta_all_ = new TH2F( "phi_theta_event_by_event", ";#phi;N particles in event", 6, -M_PI, M_PI, 6, 0.3, 1.5 );
+  h1_phi_theta_all_ = new TH2F( "phi_theta_event_by_event", ";#phi;N particles in event", 18, -M_PI, M_PI, 6, 0.3, 1.5 );
 
   std::vector<double> pt_axis;
   std::vector<double> theta_axis;
@@ -40,7 +40,7 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   std::vector<double> npart_sector_axis;
 
   for( int i=0; i<20; i++ ){npart_sector_axis.push_back(i);}
-  for( int i=0; i<7; i++ ){phi_axis.push_back(-M_PI+(i*2*M_PI)/6.0);}
+  for( int i=0; i<37; i++ ){phi_axis.push_back(-M_PI+(i*2*M_PI)/36.0);}
   for( int i=0; i<25; i+=1 ){theta_axis.push_back(0.3+i*0.05); }
 
   if( abs(reference_pdg_code_) == 2212 ) {
@@ -131,17 +131,19 @@ void Yield::UserExec() {
       continue;
     h3_tru_theta_pT_phi_->Fill( mom4.Theta(), mom4.Pt(), mom4.Phi() );
   }
-  for( int sector=0; sector<6; sector++ ){
+  for( int phi_bin=0; phi_bin < 36; phi_bin++ ){
     for( int theta_bin =0; theta_bin < h3_tru_theta_pT_phi_->GetNbinsX();theta_bin++ ){
       auto theta_mean = h3_tru_theta_pT_phi_->GetXaxis()->GetBinCenter(theta_bin +1);
+      auto phi_mean = h3_tru_theta_pT_phi_->GetZaxis()->GetBinCenter(phi_bin +1);
       auto theta_bin_all = h1_phi_theta_all_->GetYaxis()->FindBin( theta_mean );
-      double npart_sector = h1_phi_theta_all_->GetBinContent(sector+1, theta_bin_all);
+      auto phi_bin_all = h1_phi_theta_all_->GetXaxis()->FindBin( phi_mean );
+      double npart_sector = h1_phi_theta_all_->GetBinContent(phi_bin_all, theta_bin_all);
       for (int pT_bin = 0; pT_bin < h3_tru_theta_pT_phi_->GetNbinsY(); ++pT_bin) {
         double pT_mean = h3_tru_theta_pT_phi_->GetYaxis()->GetBinCenter(pT_bin+1);
-        double tru_npart_bin = h3_tru_theta_pT_phi_->GetBinContent(theta_bin +1, pT_bin+1, sector+1 );
+        double tru_npart_bin = h3_tru_theta_pT_phi_->GetBinContent(theta_bin +1, pT_bin+1, phi_bin +1 );
         if( fabs(tru_npart_bin) < 0.01 )
           continue;
-        auto rec_npart_bin = h3_rec_theta_pT_phi_->GetBinContent(theta_bin +1, pT_bin+1, sector+1 );
+        auto rec_npart_bin = h3_rec_theta_pT_phi_->GetBinContent(theta_bin +1, pT_bin+1, phi_bin +1 );
         auto efficiency = rec_npart_bin / tru_npart_bin;
         p3_theta_pT_npart_sector_->Fill(theta_mean, pT_mean, npart_sector-tru_npart_bin, efficiency );
       }
