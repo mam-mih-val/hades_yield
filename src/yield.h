@@ -9,6 +9,7 @@
 #include <TTree.h>
 #include <TH2F.h>
 #include <TProfile.h>
+#include <TProfile2D.h>
 #include <TProfile3D.h>
 #include <TF1.h>
 
@@ -61,6 +62,14 @@ private:
   TH3F* h3_tru_theta_pT_phi_;
   TH3F* h3_rec_theta_pT_phi_;
   TProfile3D* p3_theta_pT_npart_sector_;
+
+  TH1F* h1_theta_all_;
+  TH2F* h2_rec_pT_theta_;
+  TH2F* h2_tru_pT_theta_;
+  TProfile3D* p3_pT_theta_npart_theta_;
+  TH3F* h3_rec_pT_theta_npart_theta_;
+  TH3F* h3_tru_pT_theta_npart_theta_;
+  TH3F* h3_theta_centrality_npart;
 
   double beta_cm_;
   double ref_mass_;

@@ -34,14 +34,17 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   h1_centrality_ = new TH1F( "centrality", ";TOF+RPC hits centrality (%)", 20, 0.0, 100.0 );
   h1_phi_theta_all_ = new TH2F( "phi_theta_event_by_event", ";#phi;N particles in event", 18, -M_PI, M_PI, 6, 0.3, 1.5 );
 
+
   std::vector<double> pt_axis;
   std::vector<double> theta_axis;
   std::vector<double> phi_axis;
   std::vector<double> npart_sector_axis;
+  std::vector<double> centrality_axis;
 
   for( int i=0; i<20; i++ ){npart_sector_axis.push_back(i);}
   for( int i=0; i<37; i++ ){phi_axis.push_back(-M_PI+(i*2*M_PI)/36.0);}
   for( int i=0; i<25; i+=1 ){theta_axis.push_back(0.3+i*0.05); }
+  for( int i=0; i<13; i+=1 ){centrality_axis.push_back(i*5.); }
 
   if( abs(reference_pdg_code_) == 2212 ) {
     pt_axis = {0.0,     0.29375, 0.35625, 0.41875, 0.48125, 0.54375,
@@ -64,6 +67,35 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
                                              theta_axis.size()-1, theta_axis.data(),
                                              pt_axis.size()-1, pt_axis.data(),
                                              npart_sector_axis.size()-1, npart_sector_axis.data());
+
+  theta_axis.clear();
+  size_t n_theta_bins=48;
+  for( int i=0; i<n_theta_bins+1; i+=1 ){theta_axis.push_back(0.3+i*1.2/ (double) n_theta_bins); }
+  h1_theta_all_ = new TH1F( "h1_theta_all", ";#theta [rad];N particles in event", theta_axis.size()-1, theta_axis.data() );
+  h2_rec_pT_theta_ = new TH2F("h2_rec_pT_theta", "p_{T} [GeV/c]; #theta [rad]",
+                                  pt_axis.size()-1, pt_axis.data(),
+                                  theta_axis.size()-1, theta_axis.data());
+
+  h2_tru_pT_theta_ = new TH2F("h2_tru_pT_theta", ";p_{T} [GeV/c]; #theta [rad]",
+                                  pt_axis.size()-1, pt_axis.data(),
+                                  theta_axis.size()-1, theta_axis.data());
+  p3_pT_theta_npart_theta_ = new TProfile3D( "p3_pT_theta_npart_theta", ";p_{T} [GeV/c]; #theta [rad];N particles theta",
+                                            pt_axis.size()-1, pt_axis.data(),
+                                            theta_axis.size()-1, theta_axis.data(),
+                                            npart_sector_axis.size()-1, npart_sector_axis.data());
+  h3_rec_pT_theta_npart_theta_ = new TH3F( "h3_rec_pT_theta_npart_theta", ";p_{T} [GeV/c]; #theta [rad];N particles theta",
+                                            pt_axis.size()-1, pt_axis.data(),
+                                            theta_axis.size()-1, theta_axis.data(),
+                                            npart_sector_axis.size()-1, npart_sector_axis.data());
+  h3_tru_pT_theta_npart_theta_ = new TH3F( "h3_tru_pT_theta_npart_theta", ";p_{T} [GeV/c]; #theta [rad];N particles theta",
+                                            pt_axis.size()-1, pt_axis.data(),
+                                            theta_axis.size()-1, theta_axis.data(),
+                                            npart_sector_axis.size()-1, npart_sector_axis.data());
+  h3_theta_centrality_npart = new TH3F( "h3_theta_centrality_npart", ";#theta [rad];centrality (%);N particles theta",
+                                            theta_axis.size()-1, theta_axis.data(),
+                                                    centrality_axis.size()-1, centrality_axis.data(),
+                                             npart_sector_axis.size()-1, npart_sector_axis.data());
+
   auto y_cm = data_header_->GetBeamRapidity();
   std::vector<double> pT_midrapidity;
   beta_cm_ = tanh(y_cm);
@@ -77,6 +109,10 @@ void Yield::UserExec() {
   h1_phi_theta_all_->Reset();
   h3_rec_theta_pT_phi_->Reset();
   h3_tru_theta_pT_phi_->Reset();
+
+  h1_theta_all_->Reset();
+  h2_rec_pT_theta_->Reset();
+  h2_tru_pT_theta_->Reset();
 
   auto centrality = (*event_header_)[GetVar( "event_header/selected_tof_rpc_hits_centrality" )].GetVal();
   h1_centrality_->Fill( centrality );
@@ -111,6 +147,7 @@ void Yield::UserExec() {
       continue;
     auto y = mom4.Rapidity() - y_beam;
     h3_rec_theta_pT_phi_->Fill( mom4.Theta(), mom4.Pt(), mom4.Phi() );
+    h2_rec_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
   }
   int n_charged_tracks=0;
   for( auto particle : sim_particles_->Loop() ){
@@ -125,11 +162,13 @@ void Yield::UserExec() {
     if( fabs(charge) < 0.01 )
       continue;
     h1_phi_theta_all_->Fill( mom4.Phi(), mom4.Theta() );
+    h1_theta_all_->Fill( mom4.Theta() );
     if( !is_prim )
       continue;
     if( pid!=reference_pdg_code_ )
       continue;
     h3_tru_theta_pT_phi_->Fill( mom4.Theta(), mom4.Pt(), mom4.Phi() );
+    h2_tru_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
   }
   for( int phi_bin=0; phi_bin < 36; phi_bin++ ){
     for( int theta_bin =0; theta_bin < h3_tru_theta_pT_phi_->GetNbinsX();theta_bin++ ){
@@ -148,6 +187,22 @@ void Yield::UserExec() {
         p3_theta_pT_npart_sector_->Fill(theta_mean, pT_mean, npart_sector-tru_npart_bin, efficiency );
       }
     }
+    for( int pT_bin=0; pT_bin < h2_tru_pT_theta_->GetNbinsX(); pT_bin++ ){
+      auto mean_pT = h2_tru_pT_theta_->GetXaxis()->GetBinCenter(pT_bin+1);
+      for( int theta_bin=0; theta_bin<h2_tru_pT_theta_->GetNbinsY(); theta_bin++ ){
+        auto mean_theta = h2_tru_pT_theta_->GetYaxis()->GetBinCenter(theta_bin+1);
+        auto n_all_particles_theta = h1_theta_all_->GetBinContent( theta_bin+1 );
+        auto n_tru_particles_theta_pT = h2_tru_pT_theta_->GetBinContent( pT_bin+1, theta_bin+1 );
+        if( fabs(n_tru_particles_theta_pT) < 0.01  )
+          continue;
+        auto n_rec_particles_theta_pT = h2_rec_pT_theta_->GetBinContent( pT_bin+1, theta_bin+1 );
+        auto efficiency = n_rec_particles_theta_pT / n_tru_particles_theta_pT;
+        p3_pT_theta_npart_theta_->Fill( mean_pT, mean_theta, n_all_particles_theta - n_tru_particles_theta_pT, efficiency );
+        h3_rec_pT_theta_npart_theta_->Fill( mean_pT, mean_theta, n_all_particles_theta - n_tru_particles_theta_pT, n_rec_particles_theta_pT );
+        h3_tru_pT_theta_npart_theta_->Fill( mean_pT, mean_theta, n_all_particles_theta - n_tru_particles_theta_pT, n_tru_particles_theta_pT );
+        h3_theta_centrality_npart->Fill( mean_theta, centrality, n_all_particles_theta - n_tru_particles_theta_pT );
+      }
+    }
   }
 
 }
@@ -160,6 +215,10 @@ void Yield::UserFinish() {
 
   out_file_->cd();
   p3_theta_pT_npart_sector_->Write();
+  p3_pT_theta_npart_theta_->Write();
+  h3_theta_centrality_npart->Write();
+  h3_rec_pT_theta_npart_theta_->Write();
+  h3_tru_pT_theta_npart_theta_->Write();
   std::cout << "Finished" << std::endl;
 }
 int Yield::CalculateNumberOfChargedTracks(std::vector<double> theta_range) {
