@@ -41,7 +41,7 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   std::vector<double> npart_sector_axis;
   std::vector<double> centrality_axis;
 
-  for( int i=0; i<20; i++ ){npart_sector_axis.push_back(i);}
+  for( int i=0; i<60; i++ ){npart_sector_axis.push_back(i);}
   for( int i=0; i<37; i++ ){phi_axis.push_back(-M_PI+(i*2*M_PI)/36.0);}
   for( int i=0; i<25; i+=1 ){theta_axis.push_back(0.3+i*0.05); }
   for( int i=0; i<13; i+=1 ){centrality_axis.push_back(i*5.); }
@@ -69,7 +69,7 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
                                              npart_sector_axis.size()-1, npart_sector_axis.data());
 
   theta_axis.clear();
-  size_t n_theta_bins=48;
+  size_t n_theta_bins=6;
   for( int i=0; i<n_theta_bins+1; i+=1 ){theta_axis.push_back(0.3+i*1.2/ (double) n_theta_bins); }
   h1_theta_all_ = new TH1F( "h1_theta_all", ";#theta [rad];N particles in event", theta_axis.size()-1, theta_axis.data() );
   h2_rec_pT_theta_ = new TH2F("h2_rec_pT_theta", "p_{T} [GeV/c]; #theta [rad]",
