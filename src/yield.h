@@ -5,23 +5,21 @@
 #ifndef HADES_RAPIDITY_SRC_RAPIDITY_H_
 #define HADES_RAPIDITY_SRC_RAPIDITY_H_
 
+#include <memory>
+#include <string>
+
 #include <TFile.h>
 #include <TTree.h>
+#include <TH1F.h>
 #include <TH2F.h>
-#include <TProfile.h>
-#include <TProfile2D.h>
-#include <TProfile3D.h>
+#include <TH3F.h>
 #include <TF1.h>
 
 #include <AnalysisTree/Detector.hpp>
 #include <AnalysisTree/EventHeader.hpp>
 #include <AnalysisTree/Matching.hpp>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TH3F.h>
+
 #include <at_task/Task.h>
-#include <memory>
-#include <string>
 
 class Yield : public UserFillTask {
 
@@ -34,23 +32,17 @@ public:
   void PostFinish() override {
     UserTask::PostFinish();
   }
-  std::vector<double> CalculateThetaRange( const std::vector<double>& y_range, const std::vector<double>& pT_range, double m ){
-    std::vector<double> theta_vector;
-    for( auto y : y_range ){
-      for( auto pT : pT_range ){
-        auto sinh_eta = sqrt( m*m + pT*pT )/pT * sinh( y );
-        auto eta = asinh( sinh_eta );
-        auto theta = 2 * atan( exp(-eta) );
-        theta_vector.push_back(theta);
-      }
-    }
-    auto theta_min = *std::min_element( theta_vector.begin(), theta_vector.end() );
-    auto theta_max = *std::max_element( theta_vector.begin(), theta_vector.end() );
-    return {theta_min, theta_max};
-  }
-  int CalculateNumberOfChargedTracks( std::vector<double> );
 private:
-  void InitEfficiency();
+  double AngleDifference( double phi, double psi ){
+    auto delta_phi = phi - psi;
+    if( delta_phi < -M_PI )
+      delta_phi+=2*M_PI;
+    if( delta_phi > M_PI )
+      delta_phi-=2*M_PI;
+    return delta_phi;
+  }
+  void LoopRecTracks();
+  void LoopTruParticles();
 
   ATI2::Branch* event_header_;
   ATI2::Branch* sim_header_;
@@ -58,18 +50,14 @@ private:
   ATI2::Branch* sim_particles_{nullptr};
 
   TH1F* h1_centrality_;
-  TH2F* h1_phi_theta_all_;
-  TH3F* h3_tru_theta_pT_phi_;
-  TH3F* h3_rec_theta_pT_phi_;
-  TProfile3D* p3_theta_pT_npart_sector_;
 
-  TH1F* h1_theta_all_;
-  TH2F* h2_rec_pT_theta_;
-  TH2F* h2_tru_pT_theta_;
-  TProfile3D* p3_pT_theta_npart_theta_;
-  TH3F* h3_rec_pT_theta_npart_theta_;
-  TH3F* h3_tru_pT_theta_npart_theta_;
-  TH3F* h3_theta_centrality_npart;
+  // True gen particles
+  TH3F* h3_tru_delta_phi_theta_centrality_pid_;
+  TH3F* h3_tru_delta_phi_theta_centrality_all_;
+
+  // Reconstructed particles
+  TH3F* h3_rec_delta_phi_theta_centrality_pid_;
+  TH3F* h3_rec_delta_phi_theta_centrality_all_;
 
   double beta_cm_;
   double ref_mass_;
