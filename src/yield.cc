@@ -95,7 +95,7 @@ void Yield::LoopRecTracks() {
     auto dca_z = track[rec_dca_z_var].GetVal();
     auto delta_phi = AngleDifference(mom4.Phi(), psi_rp);
     h3_rec_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
-    p2_rec_v1_all_->Fill( mom4.Theta(), centrality, delta_phi );
+    p2_rec_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     if( chi2 > 100.0 )
       continue;
     if ( -10 > dca_xy || dca_xy > 10 )
@@ -105,7 +105,7 @@ void Yield::LoopRecTracks() {
     if( pid != reference_pdg_code_ )
       continue;
     h3_rec_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
-    p2_rec_v1_pid_->Fill( mom4.Theta(), centrality, delta_phi );
+    p2_rec_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
   }
 }
 
@@ -129,13 +129,13 @@ void Yield::LoopTruParticles() {
     if( fabs(charge) < 0.01 )
       continue;
     h3_tru_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
-    p2_tru_v1_all_->Fill( mom4.Theta(), centrality, delta_phi );
+    p2_tru_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     if( !is_prim )
       continue;
     if( pid!=reference_pdg_code_ )
       continue;
     h3_tru_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
-    p2_tru_v1_pid_->Fill( mom4.Theta(), centrality, delta_phi );
+    p2_tru_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
   }
 }
 
