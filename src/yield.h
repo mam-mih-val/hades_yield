@@ -13,6 +13,7 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
+#include <TProfile2D.h>
 #include <TF1.h>
 
 #include <AnalysisTree/Detector.hpp>
@@ -54,10 +55,14 @@ private:
   // True gen particles
   TH3F* h3_tru_delta_phi_theta_centrality_pid_;
   TH3F* h3_tru_delta_phi_theta_centrality_all_;
+  TProfile2D* p2_tru_v1_pid_;
+  TProfile2D* p2_rec_v1_pid_;
 
   // Reconstructed particles
   TH3F* h3_rec_delta_phi_theta_centrality_pid_;
   TH3F* h3_rec_delta_phi_theta_centrality_all_;
+  TProfile2D* p2_tru_v1_all_;
+  TProfile2D* p2_rec_v1_all_;
 
   double beta_cm_;
   double ref_mass_;

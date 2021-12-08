@@ -53,6 +53,12 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
                                                     140, 0.2, 1.6,
                                                     12, 0.0, 60.);
 
+  p2_tru_v1_pid_ = new TProfile2D( "p2_tru_v1_pid", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
+  p2_rec_v1_pid_ = new TProfile2D( "p2_rec_v1_pid", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
+
+  p2_tru_v1_all_ = new TProfile2D( "p2_tru_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
+  p2_rec_v1_all_ = new TProfile2D( "p2_rec_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
+
   auto y_cm = data_header_->GetBeamRapidity();
   beta_cm_ = tanh(y_cm);
   out_file_->cd();
@@ -89,6 +95,7 @@ void Yield::LoopRecTracks() {
     auto dca_z = track[rec_dca_z_var].GetVal();
     auto delta_phi = AngleDifference(mom4.Phi(), psi_rp);
     h3_rec_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
+    p2_rec_v1_all_->Fill( mom4.Theta(), centrality, delta_phi );
     if( chi2 > 100.0 )
       continue;
     if ( -10 > dca_xy || dca_xy > 10 )
@@ -98,6 +105,7 @@ void Yield::LoopRecTracks() {
     if( pid != reference_pdg_code_ )
       continue;
     h3_rec_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
+    p2_rec_v1_pid_->Fill( mom4.Theta(), centrality, delta_phi );
   }
 }
 
@@ -121,11 +129,13 @@ void Yield::LoopTruParticles() {
     if( fabs(charge) < 0.01 )
       continue;
     h3_tru_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
+    p2_tru_v1_all_->Fill( mom4.Theta(), centrality, delta_phi );
     if( !is_prim )
       continue;
     if( pid!=reference_pdg_code_ )
       continue;
     h3_tru_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
+    p2_tru_v1_pid_->Fill( mom4.Theta(), centrality, delta_phi );
   }
 }
 
@@ -142,5 +152,11 @@ void Yield::UserFinish() {
   h3_tru_delta_phi_theta_centrality_pid_->Write();
   h3_rec_delta_phi_theta_centrality_all_->Write();
   h3_rec_delta_phi_theta_centrality_pid_->Write();
+
+  p2_tru_v1_pid_->Write();
+  p2_rec_v1_pid_->Write();
+  p2_tru_v1_all_->Write();
+  p2_rec_v1_all_->Write();
+
   std::cout << "Finished" << std::endl;
 }
