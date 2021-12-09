@@ -55,12 +55,14 @@ private:
   // True gen particles
   TH3F* h3_tru_delta_phi_theta_centrality_pid_;
   TH3F* h3_tru_delta_phi_theta_centrality_all_;
-  TProfile2D* p2_tru_v1_pid_;
+  TH2F* h2_rec_theta_centrality_all_;
+  TProfile2D* p2_tru_v1_pid_ ;
   TProfile2D* p2_rec_v1_pid_;
 
   // Reconstructed particles
   TH3F* h3_rec_delta_phi_theta_centrality_pid_;
   TH3F* h3_rec_delta_phi_theta_centrality_all_;
+  TH2F* h2_tru_theta_centrality_all_;
   TProfile2D* p2_tru_v1_all_;
   TProfile2D* p2_rec_v1_all_;
 

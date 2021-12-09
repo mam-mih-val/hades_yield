@@ -53,6 +53,15 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
                                                     140, 0.2, 1.6,
                                                     12, 0.0, 60.);
 
+  h2_rec_theta_centrality_all_ = new TH2F( "h2_rec_theta_centrality_all",
+                                          "#theta;centrality (%)",
+                                          140, 0.2, 1.6,
+                                          12, 0.0, 60.);
+  h2_tru_theta_centrality_all_ = new TH2F( "h2_tru_theta_centrality_all",
+                                          "#theta;centrality (%)",
+                                          140, 0.2, 1.6,
+                                          12, 0.0, 60.);
+
   p2_tru_v1_pid_ = new TProfile2D( "p2_tru_v1_pid", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
   p2_rec_v1_pid_ = new TProfile2D( "p2_rec_v1_pid", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
 
@@ -96,6 +105,7 @@ void Yield::LoopRecTracks() {
     auto delta_phi = AngleDifference(mom4.Phi(), psi_rp);
     h3_rec_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_rec_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
+    h2_rec_theta_centrality_all_->Fill(mom4.Theta(), centrality);
     if( chi2 > 100.0 )
       continue;
     if ( -10 > dca_xy || dca_xy > 10 )
@@ -130,6 +140,7 @@ void Yield::LoopTruParticles() {
       continue;
     h3_tru_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_tru_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
+    h2_tru_theta_centrality_all_->Fill(mom4.Theta(), centrality);
     if( !is_prim )
       continue;
     if( pid!=reference_pdg_code_ )
