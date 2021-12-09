@@ -163,7 +163,8 @@ void Yield::UserFinish() {
   h3_tru_delta_phi_theta_centrality_pid_->Write();
   h3_rec_delta_phi_theta_centrality_all_->Write();
   h3_rec_delta_phi_theta_centrality_pid_->Write();
-
+  h2_rec_theta_centrality_all_->Write();
+  h2_tru_theta_centrality_all_->Write();
   p2_tru_v1_pid_->Write();
   p2_rec_v1_pid_->Write();
   p2_tru_v1_all_->Write();
