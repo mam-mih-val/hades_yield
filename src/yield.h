@@ -13,8 +13,9 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
-#include <TProfile2D.h>
 #include <TF1.h>
+#include <TProfile2D.h>
+#include <TProfile3D.h>
 
 #include <AnalysisTree/Detector.hpp>
 #include <AnalysisTree/EventHeader.hpp>
@@ -45,26 +46,34 @@ private:
   void LoopRecTracks();
   void LoopTruParticles();
 
-  ATI2::Branch* event_header_;
-  ATI2::Branch* sim_header_;
+  ATI2::Branch* event_header_{nullptr};
+  ATI2::Branch* sim_header_{nullptr};
   ATI2::Branch* tracks_{nullptr};
   ATI2::Branch* sim_particles_{nullptr};
+
+  AnalysisTree::Matching* rec_sim_matching_{nullptr};
 
   TH1F* h1_centrality_;
 
   // True gen particles
-  TH3F* h3_tru_delta_phi_theta_centrality_pid_;
-  TH3F* h3_tru_delta_phi_theta_centrality_all_;
-  TH2F* h2_rec_theta_centrality_all_;
-  TProfile2D* p2_tru_v1_pid_ ;
-  TProfile2D* p2_rec_v1_pid_;
+  TH3F* h3_tru_delta_phi_theta_centrality_pid_{nullptr};
+  TH3F* h3_tru_delta_phi_theta_centrality_all_{nullptr};
+  TH2F* h2_rec_theta_centrality_all_{nullptr};
+  TProfile2D* p2_tru_v1_pid_{nullptr};
+  TProfile2D* p2_rec_v1_pid_{nullptr};
 
   // Reconstructed particles
-  TH3F* h3_rec_delta_phi_theta_centrality_pid_;
-  TH3F* h3_rec_delta_phi_theta_centrality_all_;
-  TH2F* h2_tru_theta_centrality_all_;
-  TProfile2D* p2_tru_v1_all_;
-  TProfile2D* p2_rec_v1_all_;
+  TH3F* h3_rec_delta_phi_theta_centrality_pid_{nullptr};
+  TH3F* h3_rec_delta_phi_theta_centrality_all_{nullptr};
+  TH2F* h2_tru_theta_centrality_all_{nullptr};
+  TProfile2D* p2_tru_v1_all_{nullptr};
+  TProfile2D* p2_rec_v1_all_{nullptr};
+
+  TProfile3D* p3_dtheta_dphi_dpT_loss_{nullptr};
+  TH2F* h2_theta_phi_sector_lost_population_{nullptr};
+
+  TProfile2D*p2_dphi_dtheta_efficiency_{nullptr};
+  TH2F* h2_dphi_dtheta_{nullptr};
 
   double beta_cm_;
   double ref_mass_;
