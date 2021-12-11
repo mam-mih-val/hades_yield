@@ -78,11 +78,11 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
                                                   ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
                                                   50, -0.75, 0.75,
                                                   120, 0.3, 1.5);
-  h2_dphi_dtheta_ = new TH2F( "h2_dphi_dtheta_",
+  p2_dphi_dtheta_second_efficiency_ = new TProfile2D( "p2_dphi_dtheta_second_efficiency_",
                              ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
                              150, -1.5, 1.5,
                              150, -1.5, 1.5);
-  p2_dphi_dtheta_efficiency_ = new TProfile2D( "p2_dphi_dtheta_efficiency_",
+  p2_dphi_dtheta_pair_efficiency_ = new TProfile2D( "p2_dphi_dtheta_pair_efficiency_",
                              ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
                              150, -1.5, 1.5,
                              150, -1.5, 1.5);
@@ -209,12 +209,14 @@ void Yield::LoopTruParticles() {
         h2_theta_phi_sector_lost_population_ -> Fill( mom42.Phi() - sector_phi, mom42.Theta(), 2-n_rec );
       }
       if( match2 < 0 )
-        continue;
-      h2_dphi_dtheta_->Fill( dphi, dtheta );
-      if( match1 < 0 )
-        p2_dphi_dtheta_efficiency_->Fill(dphi, dtheta, 0);
-      if( match1 >= 0 )
-        p2_dphi_dtheta_efficiency_->Fill(dphi, dtheta, 1);
+        p2_dphi_dtheta_second_efficiency_->Fill( dphi, dtheta, 0 );
+      if( match2 >= 0 )
+        p2_dphi_dtheta_second_efficiency_->Fill( dphi, dtheta, 1 );
+
+      if( match1 < 0 && match2 >= 0 )
+        p2_dphi_dtheta_pair_efficiency_->Fill(dphi, dtheta, 0);
+      if( match1 >= 0  && match2 >= 0 )
+        p2_dphi_dtheta_pair_efficiency_->Fill(dphi, dtheta, 1);
     }
     h3_tru_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_tru_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
@@ -249,7 +251,7 @@ void Yield::UserFinish() {
   p2_rec_v1_all_->Write();
   p3_dtheta_dphi_dpT_loss_->Write();
   h2_theta_phi_sector_lost_population_->Write();
-  h2_dphi_dtheta_->Write();
-  p2_dphi_dtheta_efficiency_->Write();
+  p2_dphi_dtheta_second_efficiency_->Write();
+  p2_dphi_dtheta_pair_efficiency_->Write();
   std::cout << "Finished" << std::endl;
 }
