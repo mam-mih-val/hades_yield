@@ -74,6 +74,7 @@ private:
 
   TProfile2D* p2_dphi_dtheta_pair_efficiency_{nullptr};
   TProfile2D* p2_dphi_dtheta_second_efficiency_{nullptr};
+  TProfile3D* p2_dphi_dtheta_conditional_efficiency_{nullptr};
 
   double beta_cm_;
   double ref_mass_;

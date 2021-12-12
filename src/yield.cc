@@ -86,6 +86,11 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
                              ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
                              150, -1.5, 1.5,
                              150, -1.5, 1.5);
+  p2_dphi_dtheta_conditional_efficiency_ = new TProfile3D( "p2_dphi_dtheta_conditional_efficiency_",
+                                                          ";#theta (rad);#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
+                                                          120, 0.3, 1.5,
+                                                          150, -1.5, 1.5,
+                                                          150, -1.5, 1.5);
 
   auto y_cm = data_header_->GetBeamRapidity();
   beta_cm_ = tanh(y_cm);
@@ -168,8 +173,10 @@ void Yield::LoopTruParticles() {
       continue;
 //    if( mom4.Pt() < 0.4 )
 //      continue;
-//    if( !is_prim )
-//      continue;
+    if( !is_prim )
+      continue;
+    if( pid!=reference_pdg_code_ )
+      continue;
     for( int idx2= 0; idx2 < sim_particles_->size(); idx2++ ){
       if( idx2 == idx1 )
         continue;
@@ -220,12 +227,13 @@ void Yield::LoopTruParticles() {
 
       int first_and_second = match1 >= 0 && match2 >= 0;
       p2_dphi_dtheta_pair_efficiency_->Fill(dphi, dtheta, first_and_second);
+      if( match2 < 0 )
+        continue;
+      p2_dphi_dtheta_conditional_efficiency_->Fill(mom4.Theta(), dphi, dtheta, first_and_second);
     }
     h3_tru_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_tru_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     h2_tru_theta_centrality_all_->Fill(mom4.Theta(), centrality);
-    if( pid!=reference_pdg_code_ )
-      continue;
     h3_tru_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_tru_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
   }
@@ -254,5 +262,6 @@ void Yield::UserFinish() {
   h2_theta_phi_sector_lost_population_->Write();
   p2_dphi_dtheta_second_efficiency_->Write();
   p2_dphi_dtheta_pair_efficiency_->Write();
+  p2_dphi_dtheta_conditional_efficiency_->Write();
   std::cout << "Finished" << std::endl;
 }
