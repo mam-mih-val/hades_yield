@@ -33,9 +33,9 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
 
   h1_centrality_ = new TH1F( "centrality", ";TOF+RPC hits centrality (%)", 20, 0.0, 100.0 );
 
-  int nbins[] = {12, 100, 120, 100, 120};
-  double xmin[] = {0., -1., 0.3, -1., 0.3};
-  double xmax[] = {60., +1., 1.5, 1., 1.5};
+  int nbins[] = {12, 10, 12, 10, 12};
+  double xmin[] = {0., -0.5, 0.3, -0.5, 0.3};
+  double xmax[] = {60., +0.5, 1.5, 0.5, 1.5};
   hn_tru_npairs_centrality_phi_theta_ = new THnSparseF( "hn_tru_npairs_centrality_phi_theta_",
                                                  ";centrality (%);#phi_{1} (rad);#theta_{1} (rad);#phi_{2} (rad);#theta_{2} (rad);",
                                                  5, nbins, xmin, xmax);
