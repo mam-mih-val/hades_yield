@@ -33,64 +33,37 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
 
   h1_centrality_ = new TH1F( "centrality", ";TOF+RPC hits centrality (%)", 20, 0.0, 100.0 );
 
-  h3_tru_delta_phi_theta_centrality_all_ = new TH3F("h3_tru_delta_phi_theta_centrality_all",
-                                                    ";#Delta#phi (rad);#theta;centrality (%)",
-                                                    350, -3.5, 3.5,
-                                                    140, 0.2, 1.6,
-                                                    12, 0.0, 60.);
-  h3_tru_delta_phi_theta_centrality_pid_ = new TH3F("h3_tru_delta_phi_theta_centrality_pid",
-                                                    ";#Delta#phi (rad);#theta;centrality (%)",
-                                                    350, -3.5, 3.5,
-                                                    140, 0.2, 1.6,
-                                                    12, 0.0, 60.);
-  h3_rec_delta_phi_theta_centrality_all_ = new TH3F("h3_rec_delta_phi_theta_centrality_all",
-                                                    ";#Delta#phi (rad);#theta;centrality (%)",
-                                                    350, -3.5, 3.5,
-                                                    140, 0.2, 1.6,
-                                                    12, 0.0, 60.);
-  h3_rec_delta_phi_theta_centrality_pid_ = new TH3F("h3_rec_delta_phi_theta_centrality_pid",
-                                                    ";#Delta#phi (rad);#theta;centrality (%)",
-                                                    350, -3.5, 3.5,
-                                                    140, 0.2, 1.6,
-                                                    12, 0.0, 60.);
+  int nbins[] = {12, 100, 120, 100, 120};
+  double xmin[] = {0., -1., 0.3, -1., 0.3};
+  double xmax[] = {60., +1., 1.5, 1., 1.5};
+  hn_tru_npairs_centrality_phi_theta_ = new THnSparseF( "hn_tru_npairs_centrality_phi_theta_",
+                                                 ";centrality (%);#phi_{1} (rad);#theta_{1} (rad);#phi_{2} (rad);#theta_{2} (rad);",
+                                                 5, nbins, xmin, xmax);
+  hn_rec_npairs_centrality_phi_theta_ = new THnSparseF( "hn_rec_npairs_centrality_phi_theta_",
+                                                 ";centrality (%);#phi_{1} (rad);#theta_{1} (rad);#phi_{2} (rad);#theta_{2} (rad);",
+                                                 5, nbins, xmin, xmax);
 
-  h2_rec_theta_centrality_all_ = new TH2F( "h2_rec_theta_centrality_all",
-                                          "#theta;centrality (%)",
-                                          140, 0.2, 1.6,
-                                          12, 0.0, 60.);
-  h2_tru_theta_centrality_all_ = new TH2F( "h2_tru_theta_centrality_all",
-                                          "#theta;centrality (%)",
-                                          140, 0.2, 1.6,
-                                          12, 0.0, 60.);
+  h3_rec_all_npart_centrality_phi_theta_ = new TH3F( "h3_rec_all_npart_centrality_phi_theta_",
+                                            ";centrality (%);#phi (rad);#theta (rad)",
+                                            12, 0, 60,
+                                            100, -1, 1,
+                                            120, 0.3, 1.5);
+  h3_tru_all_npart_centrality_phi_theta_ = new TH3F( "h3_tru_all_npart_centrality_phi_theta_",
+                                            ";centrality (%);#phi (rad);#theta (rad)",
+                                            12, 0, 60,
+                                            100, -1, 1,
+                                            120, 0.3, 1.5);
 
-  p2_tru_v1_pid_ = new TProfile2D( "p2_tru_v1_pid", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
-  p2_rec_v1_pid_ = new TProfile2D( "p2_rec_v1_pid", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
-
-  p2_tru_v1_all_ = new TProfile2D( "p2_tru_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
-  p2_rec_v1_all_ = new TProfile2D( "p2_rec_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
-
-  p3_dtheta_dphi_dpT_loss_ = new TProfile3D("p3_dtheta_dphi_dpT_loss_",
-                                            ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad);p_{T,1}-p_{T,2} (GeV/c)",
-                                            150, -1.5, 1.5,
-                                            150, -1.5, 1.5,
-                                            150, -1.5, 1.5  );
-  h2_theta_phi_sector_lost_population_ = new TH2F( "h2_theta_phi_sector_lost_population",
-                                                  ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
-                                                  50, -0.75, 0.75,
-                                                  120, 0.3, 1.5);
-  p2_dphi_dtheta_second_efficiency_ = new TProfile2D( "p2_dphi_dtheta_second_efficiency_",
-                             ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
-                             150, -1.5, 1.5,
-                             150, -1.5, 1.5);
-  p2_dphi_dtheta_pair_efficiency_ = new TProfile2D( "p2_dphi_dtheta_pair_efficiency_",
-                             ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
-                             150, -1.5, 1.5,
-                             150, -1.5, 1.5);
-  p2_dphi_dtheta_conditional_efficiency_ = new TProfile3D( "p2_dphi_dtheta_conditional_efficiency_",
-                                                          ";#theta (rad);#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
-                                                          120, 0.3, 1.5,
-                                                          150, -1.5, 1.5,
-                                                          150, -1.5, 1.5);
+  h3_rec_pid_npart_centrality_phi_theta_ = new TH3F( "h3_rec_pid_npart_centrality_phi_theta_",
+                                            ";centrality (%);#phi (rad);#theta (rad)",
+                                            12, 0, 60,
+                                            100, -1, 1,
+                                            120, 0.3, 1.5);
+  h3_tru_pid_npart_centrality_phi_theta_ = new TH3F( "h3_tru_pid_npart_centrality_phi_theta_",
+                                            ";centrality (%);#phi (rad);#theta (rad)",
+                                            12, 0, 60,
+                                            100, -1, 1,
+                                            120, 0.3, 1.5);
 
   auto y_cm = data_header_->GetBeamRapidity();
   beta_cm_ = tanh(y_cm);
@@ -115,31 +88,56 @@ void Yield::LoopRecTracks() {
   auto rec_dca_xy_var = GetVar("mdc_vtx_tracks/dca_xy");
   auto rec_dca_z_var = GetVar("mdc_vtx_tracks/dca_z");
 
-  for (auto track : tracks_->Loop()) {
-    auto pid = track.DataT<Particle>()->GetPid();
-    auto mass = track.DataT<Particle>()->GetMass();
-    if( pid != 0 ) {
-      if( TDatabasePDG::Instance()->GetParticle(pid) )
-        mass = TDatabasePDG::Instance()->GetParticle(pid)->Mass();
+  for (size_t idx1=0; idx1 < tracks_->size(); idx1++) {
+    auto track1 = (*tracks_)[idx1];
+    auto pid1 = track1.DataT<Particle>()->GetPid();
+    auto mass1 = track1.DataT<Particle>()->GetMass();
+    if(pid1 != 0 ) {
+      if( TDatabasePDG::Instance()->GetParticle(pid1) )
+        mass1 = TDatabasePDG::Instance()->GetParticle(pid1)->Mass();
     }
-    auto mom4 = track.DataT<Particle>()->Get4MomentumByMass(mass);
-    auto chi2 = track[rec_chi2_var].GetVal();
-    auto dca_xy = track[rec_dca_xy_var].GetVal();
-    auto dca_z = track[rec_dca_z_var].GetVal();
-    auto delta_phi = AngleDifference(mom4.Phi(), psi_rp);
-    h3_rec_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
-    p2_rec_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
-    h2_rec_theta_centrality_all_->Fill(mom4.Theta(), centrality);
-    if( chi2 > 100.0 )
+    auto mom1 = track1.DataT<Particle>()->Get4MomentumByMass(mass1);
+    auto chi_sq1 = track1[rec_chi2_var].GetVal();
+    auto dca_xy = track1[rec_dca_xy_var].GetVal();
+    auto dca_z = track1[rec_dca_z_var].GetVal();
+    if(chi_sq1 > 100.0 )
       continue;
+    double phi = mom1.Phi();
+    double sector1 = floor(phi / (M_PI/3.0));
+    double sector_center = sector1 *(M_PI/3.0) + M_PI/6.0;
+    double sector_phi1 = AngleDifference(mom1.Phi(),sector_center);
+    h3_rec_all_npart_centrality_phi_theta_->Fill( centrality, sector_phi1,mom1.Theta() );
     if ( -10 > dca_xy || dca_xy > 10 )
       continue;
     if ( -10 > dca_z || dca_z > 10 )
       continue;
-    if( pid != reference_pdg_code_ )
+    if(pid1 != reference_pdg_code_ )
       continue;
-    h3_rec_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
-    p2_rec_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
+    h3_rec_pid_npart_centrality_phi_theta_->Fill( centrality, sector_phi1,
+                                                 mom1.Theta() );
+
+    // Second Loop through particles to fill histogram for pairs
+    for( size_t idx2=0; idx2 < tracks_->size(); idx2++ ){
+      if( idx1 == idx2 )
+        continue;
+      auto track2 = (*tracks_)[idx2];
+      auto pid2 = track2.DataT<Particle>()->GetPid();
+      auto mass2 = track2.DataT<Particle>()->GetMass();
+      if(pid2 != 0 ) {
+        if( TDatabasePDG::Instance()->GetParticle(pid2) )
+          mass2 = TDatabasePDG::Instance()->GetParticle(pid2)->Mass();
+      }
+      auto mom2 = track2.DataT<Particle>()->Get4MomentumByMass(mass2);
+      auto chi_sq2 = track2[rec_chi2_var].GetVal();
+      if(chi_sq2 > 100.0 )
+        continue;
+      double sector2 = floor(mom2.Phi() / (M_PI/3.0));
+      if( fabs(sector1-sector2) > 0.001 )
+        continue;
+      auto sector_phi2 = AngleDifference(mom2.Phi(),sector_center);
+      double args[] = {centrality, sector_phi1, mom1.Theta(), sector_phi2, mom2.Theta()};
+      hn_rec_npairs_centrality_phi_theta_->Fill(args);
+    }
   }
 }
 
@@ -150,92 +148,49 @@ void Yield::LoopTruParticles() {
 
   auto var_is_primary = GetVar("sim_tracks/is_primary");
 
-  int idx1 =-1;
-  for( auto particle : sim_particles_->Loop() ){
-    idx1++;
-    auto mass = particle.DataT<Particle>()->GetMass();
-    auto pid = particle.DataT<Particle>()->GetPid();
-    auto is_prim = particle[var_is_primary].GetBool();
-    auto mom4 = particle.DataT<Particle>()->Get4MomentumByMass(mass);
-    auto phi = mom4.Phi() + M_PI;
-    int sector1 = phi / ( M_PI/3.0 );
-    auto match1 = rec_sim_matching_->GetMatchInverted(idx1);
+  for( size_t idx1=0; idx1< sim_particles_->size(); idx1++ ){
+    auto particle1 = (*sim_particles_)[idx1];
+    auto mass1 = particle1.DataT<Particle>()->GetMass();
+    auto pid1 = particle1.DataT<Particle>()->GetPid();
+    auto is_prim = particle1[var_is_primary].GetBool();
+    auto mom1 = particle1.DataT<Particle>()->Get4MomentumByMass(mass1);
+    double phi = mom1.Phi();
+    double sector1 = floor(phi / (M_PI/3.0));
+    double sector_center = sector1 *(M_PI/3.0) + M_PI/6.0;
+    double sector_phi1 = AngleDifference(mom1.Phi(), sector_center);
+
     double charge=0.0;
-    if( TDatabasePDG::Instance()->GetParticle( pid ) ){
-      charge= TDatabasePDG::Instance()->GetParticle( pid )->Charge() / 3.0;
+    if( TDatabasePDG::Instance()->GetParticle(pid1) ){
+      charge= TDatabasePDG::Instance()->GetParticle(pid1)->Charge() / 3.0;
     }
-    auto delta_phi = AngleDifference(mom4.Phi(), psi_rp);
     if( fabs(charge) < 0.01 )
       continue;
-    if(  mom4.Theta() < 0.3 )
-      continue;
-    if( mom4.Theta() > 1.5 )
-      continue;
-//    if( mom4.Pt() < 0.4 )
-//      continue;
+    h3_tru_all_npart_centrality_phi_theta_->Fill( centrality, sector_phi1, mom1.Theta() );
     if( !is_prim )
       continue;
-    if( pid!=reference_pdg_code_ )
+    if(pid1 !=reference_pdg_code_ )
       continue;
+    h3_tru_pid_npart_centrality_phi_theta_->Fill( centrality, sector_phi1, mom1.Theta() );
     for( int idx2= 0; idx2 < sim_particles_->size(); idx2++ ){
       if( idx2 == idx1 )
         continue;
       auto particle2 = (*sim_particles_)[idx2];
-      auto mom42 = particle2.DataT<Particle>()->Get4MomentumByMass(mass);
-      auto phi2 = mom42.Phi() + M_PI;
-      int sector2 = phi2 / ( M_PI/3.0 );
-      if( sector1 != sector2 )
+      auto mass2 = particle2.DataT<Particle>()->GetMass();
+      auto mom2 = particle2.DataT<Particle>()->Get4MomentumByMass(mass2);
+      double sector2 = floor(mom2.Phi() / ( M_PI/3.0 ));
+      if( fabs( sector1-sector2 ) > 0.0001 )
         continue;
+      double sector_phi2 = AngleDifference(mom2.Phi(), sector_center);
       double charge2=0.0;
       auto pid2 = particle2.DataT<Particle>()->GetPid();
       if( TDatabasePDG::Instance()->GetParticle( pid2 ) ){
         charge2= TDatabasePDG::Instance()->GetParticle( pid2 )->Charge() / 3.0;
       }
-      auto is_prim2 = particle2[var_is_primary].GetBool();
       if( fabs(charge2) < 0.01 )
         continue;
-      if( mom42.Theta() < 0.3 )
-        continue;
-      if( mom42.Theta() > 1.5 )
-        continue;
-//      if( !is_prim2 )
-//        continue;
-//      if( mom42.Pt() < 0.4 )
-//        continue;
-      auto dphi = AngleDifference( mom4.Phi(), mom42.Phi() );
-      auto dtheta = AngleDifference( mom4.Theta(), mom42.Theta() );
-      auto dpT =  mom4.Pt() - mom42.Pt();
-      auto match2  = rec_sim_matching_->GetMatchInverted(idx2);
-      int n_rec = 0;
-      if( match1 >= 0 )
-        n_rec++;
-      if( match2 >= 0 )
-        n_rec++;
-      if( match1 == match2 && match1 >= 0 )
-        n_rec = 1;
-
-      p3_dtheta_dphi_dpT_loss_->Fill( dphi, dtheta, dpT, 2-n_rec );
-      if( n_rec < 2 ){
-        double sector_phi = ( sector1*M_PI/3.0 + (sector1+1)*M_PI/3.0 ) / 2 - M_PI;
-        h2_theta_phi_sector_lost_population_ -> Fill( mom4.Phi() - sector_phi, mom4.Theta(), 2-n_rec );
-        h2_theta_phi_sector_lost_population_ -> Fill( mom42.Phi() - sector_phi, mom42.Theta(), 2-n_rec );
-      }
-      if( match2 < 0 )
-        p2_dphi_dtheta_second_efficiency_->Fill( dphi, dtheta, 0 );
-      if( match2 >= 0 )
-        p2_dphi_dtheta_second_efficiency_->Fill( dphi, dtheta, 1 );
-
-      int first_and_second = match1 >= 0 && match2 >= 0;
-      p2_dphi_dtheta_pair_efficiency_->Fill(dphi, dtheta, first_and_second);
-      if( match2 < 0 )
-        continue;
-      p2_dphi_dtheta_conditional_efficiency_->Fill(mom4.Theta(), dphi, dtheta, first_and_second);
+      double args[] = {centrality, sector_phi1, mom1.Theta(), sector_phi2, mom2.Theta()};
+      hn_tru_npairs_centrality_phi_theta_->Fill(args, 1.0);
     }
-    h3_tru_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
-    p2_tru_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
-    h2_tru_theta_centrality_all_->Fill(mom4.Theta(), centrality);
-    h3_tru_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
-    p2_tru_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
   }
 }
 
@@ -243,25 +198,12 @@ void Yield::LoopTruParticles() {
 void Yield::UserFinish() {
   out_file_->cd();
   h1_centrality_->Write();
-
-//  out_file_->mkdir("efficiency_projections");
-//  out_file_->cd("efficiency_projections");
-
   out_file_->cd();
-  h3_tru_delta_phi_theta_centrality_all_->Write();
-  h3_tru_delta_phi_theta_centrality_pid_->Write();
-  h3_rec_delta_phi_theta_centrality_all_->Write();
-  h3_rec_delta_phi_theta_centrality_pid_->Write();
-  h2_rec_theta_centrality_all_->Write();
-  h2_tru_theta_centrality_all_->Write();
-  p2_tru_v1_pid_->Write();
-  p2_rec_v1_pid_->Write();
-  p2_tru_v1_all_->Write();
-  p2_rec_v1_all_->Write();
-  p3_dtheta_dphi_dpT_loss_->Write();
-  h2_theta_phi_sector_lost_population_->Write();
-  p2_dphi_dtheta_second_efficiency_->Write();
-  p2_dphi_dtheta_pair_efficiency_->Write();
-  p2_dphi_dtheta_conditional_efficiency_->Write();
+  h3_rec_all_npart_centrality_phi_theta_->Write();
+  h3_tru_all_npart_centrality_phi_theta_->Write();
+  h3_rec_pid_npart_centrality_phi_theta_->Write();
+  h3_tru_pid_npart_centrality_phi_theta_->Write();
+  hn_rec_npairs_centrality_phi_theta_->Write();
+  hn_tru_npairs_centrality_phi_theta_->Write();
   std::cout << "Finished" << std::endl;
 }

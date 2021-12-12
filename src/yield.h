@@ -16,6 +16,7 @@
 #include <TF1.h>
 #include <TProfile2D.h>
 #include <TProfile3D.h>
+#include <THnSparse.h>
 
 #include <AnalysisTree/Detector.hpp>
 #include <AnalysisTree/EventHeader.hpp>
@@ -55,26 +56,14 @@ private:
 
   TH1F* h1_centrality_;
 
-  // True gen particles
-  TH3F* h3_tru_delta_phi_theta_centrality_pid_{nullptr};
-  TH3F* h3_tru_delta_phi_theta_centrality_all_{nullptr};
-  TH2F* h2_rec_theta_centrality_all_{nullptr};
-  TProfile2D* p2_tru_v1_pid_{nullptr};
-  TProfile2D* p2_rec_v1_pid_{nullptr};
+  THnSparseF* hn_rec_npairs_centrality_phi_theta_{nullptr};
+  THnSparseF* hn_tru_npairs_centrality_phi_theta_{nullptr};
 
-  // Reconstructed particles
-  TH3F* h3_rec_delta_phi_theta_centrality_pid_{nullptr};
-  TH3F* h3_rec_delta_phi_theta_centrality_all_{nullptr};
-  TH2F* h2_tru_theta_centrality_all_{nullptr};
-  TProfile2D* p2_tru_v1_all_{nullptr};
-  TProfile2D* p2_rec_v1_all_{nullptr};
+  TH3F*h3_rec_all_npart_centrality_phi_theta_{nullptr};
+  TH3F*h3_tru_all_npart_centrality_phi_theta_{nullptr};
 
-  TProfile3D* p3_dtheta_dphi_dpT_loss_{nullptr};
-  TH2F* h2_theta_phi_sector_lost_population_{nullptr};
-
-  TProfile2D* p2_dphi_dtheta_pair_efficiency_{nullptr};
-  TProfile2D* p2_dphi_dtheta_second_efficiency_{nullptr};
-  TProfile3D* p2_dphi_dtheta_conditional_efficiency_{nullptr};
+  TH3F*h3_rec_pid_npart_centrality_phi_theta_{nullptr};
+  TH3F*h3_tru_pid_npart_centrality_phi_theta_{nullptr};
 
   double beta_cm_;
   double ref_mass_;
