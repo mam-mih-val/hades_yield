@@ -33,36 +33,36 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
 
   h1_centrality_ = new TH1F( "centrality", ";TOF+RPC hits centrality (%)", 20, 0.0, 100.0 );
 
-  int nbins[] = {12, 10, 12, 10, 12};
-  double xmin[] = {0., -0.5, 0.3, -0.5, 0.3};
-  double xmax[] = {60., +0.5, 1.5, 0.5, 1.5};
+  int nbins[] = {12, 10, 10, 12, 10, 12};
+  double xmin[] = {0., 0.0, -0.5, 0.3, -0.5, 0.3};
+  double xmax[] = {60., 2.0, +0.5, 1.5, 0.5, 1.5};
   hn_tru_npairs_centrality_phi_theta_ = new THnSparseF( "hn_tru_npairs_centrality_phi_theta_",
-                                                 ";centrality (%);#phi_{1} (rad);#theta_{1} (rad);#phi_{2} (rad);#theta_{2} (rad);",
-                                                 5, nbins, xmin, xmax);
+                                                 ";centrality (%);p_{T} (GeV/c);#phi_{1} (rad);#theta_{1} (rad);#phi_{2} (rad);#theta_{2} (rad);",
+                                                 6, nbins, xmin, xmax);
   hn_rec_npairs_centrality_phi_theta_ = new THnSparseF( "hn_rec_npairs_centrality_phi_theta_",
-                                                 ";centrality (%);#phi_{1} (rad);#theta_{1} (rad);#phi_{2} (rad);#theta_{2} (rad);",
-                                                 5, nbins, xmin, xmax);
+                                                 ";centrality (%);p_{T} (GeV/c);#phi_{1} (rad);#theta_{1} (rad);#phi_{2} (rad);#theta_{2} (rad);",
+                                                 6, nbins, xmin, xmax);
 
   h3_rec_all_npart_centrality_phi_theta_ = new TH3F( "h3_rec_all_npart_centrality_phi_theta_",
-                                            ";centrality (%);#phi (rad);#theta (rad)",
+                                            ";centrality (%);p_{T} (GeV/c);#theta (rad)",
                                             12, 0, 60,
-                                            100, -1, 1,
+                                            100, 0, 2,
                                             120, 0.3, 1.5);
   h3_tru_all_npart_centrality_phi_theta_ = new TH3F( "h3_tru_all_npart_centrality_phi_theta_",
-                                            ";centrality (%);#phi (rad);#theta (rad)",
+                                            ";centrality (%);p_{T} (GeV/c);#theta (rad)",
                                             12, 0, 60,
-                                            100, -1, 1,
+                                            100, 0, 2,
                                             120, 0.3, 1.5);
 
   h3_rec_pid_npart_centrality_phi_theta_ = new TH3F( "h3_rec_pid_npart_centrality_phi_theta_",
-                                            ";centrality (%);#phi (rad);#theta (rad)",
+                                            ";centrality (%);p_{T} (GeV/c);#;#theta (rad)",
                                             12, 0, 60,
-                                            100, -1, 1,
+                                            100, 0, 2,
                                             120, 0.3, 1.5);
   h3_tru_pid_npart_centrality_phi_theta_ = new TH3F( "h3_tru_pid_npart_centrality_phi_theta_",
-                                            ";centrality (%);#phi (rad);#theta (rad)",
+                                            ";centrality (%);p_{T} (GeV/c);#;#theta (rad)",
                                             12, 0, 60,
-                                            100, -1, 1,
+                                            100, 0, 2,
                                             120, 0.3, 1.5);
 
   auto y_cm = data_header_->GetBeamRapidity();
@@ -106,15 +106,14 @@ void Yield::LoopRecTracks() {
     double sector1 = floor(phi / (M_PI/3.0));
     double sector_center = sector1 *(M_PI/3.0) + M_PI/6.0;
     double sector_phi1 = AngleDifference(mom1.Phi(),sector_center);
-    h3_rec_all_npart_centrality_phi_theta_->Fill( centrality, sector_phi1,mom1.Theta() );
+    h3_rec_all_npart_centrality_phi_theta_->Fill( centrality, mom1.Pt(),mom1.Theta() );
     if ( -10 > dca_xy || dca_xy > 10 )
       continue;
     if ( -10 > dca_z || dca_z > 10 )
       continue;
     if(pid1 != reference_pdg_code_ )
       continue;
-    h3_rec_pid_npart_centrality_phi_theta_->Fill( centrality, sector_phi1,
-                                                 mom1.Theta() );
+    h3_rec_pid_npart_centrality_phi_theta_->Fill( centrality, mom1.Pt(),mom1.Theta() );
 
     // Second Loop through particles to fill histogram for pairs
     for( size_t idx2=0; idx2 < tracks_->size(); idx2++ ){
@@ -135,7 +134,7 @@ void Yield::LoopRecTracks() {
       if( fabs(sector1-sector2) > 0.001 )
         continue;
       auto sector_phi2 = AngleDifference(mom2.Phi(),sector_center);
-      double args[] = {centrality, sector_phi1, mom1.Theta(), sector_phi2, mom2.Theta()};
+      double args[] = {centrality, mom1.Pt(), sector_phi1, mom1.Theta(), sector_phi2, mom2.Theta()};
       hn_rec_npairs_centrality_phi_theta_->Fill(args);
     }
   }
@@ -165,12 +164,12 @@ void Yield::LoopTruParticles() {
     }
     if( fabs(charge) < 0.01 )
       continue;
-    h3_tru_all_npart_centrality_phi_theta_->Fill( centrality, sector_phi1, mom1.Theta() );
+    h3_tru_all_npart_centrality_phi_theta_->Fill( centrality, mom1.Pt(), mom1.Theta() );
     if( !is_prim )
       continue;
     if(pid1 !=reference_pdg_code_ )
       continue;
-    h3_tru_pid_npart_centrality_phi_theta_->Fill( centrality, sector_phi1, mom1.Theta() );
+    h3_tru_pid_npart_centrality_phi_theta_->Fill( centrality, mom1.Pt(), mom1.Theta() );
     for( int idx2= 0; idx2 < sim_particles_->size(); idx2++ ){
       if( idx2 == idx1 )
         continue;
@@ -188,8 +187,8 @@ void Yield::LoopTruParticles() {
       }
       if( fabs(charge2) < 0.01 )
         continue;
-      double args[] = {centrality, sector_phi1, mom1.Theta(), sector_phi2, mom2.Theta()};
-      hn_tru_npairs_centrality_phi_theta_->Fill(args, 1.0);
+      double args[] = {centrality, mom1.Pt(), sector_phi1, mom1.Theta(), sector_phi2, mom2.Theta()};
+      hn_tru_npairs_centrality_phi_theta_->Fill(args);
     }
   }
 }
