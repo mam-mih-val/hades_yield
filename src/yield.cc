@@ -15,6 +15,7 @@ boost::program_options::options_description Yield::GetBoostOptions() {
   using namespace boost::program_options;
   options_description desc(GetName() + " options");
   desc.add_options()
+    ("acceptance-protons", value(&str_protons_acceptance_)->default_value(""), "PDG-code of particle")
     ("pdg-code", value(&reference_pdg_code_)->default_value(2212), "PDG-code of particle");
   return desc;
 }
@@ -69,9 +70,13 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   p2_tru_v1_all_ = new TProfile2D( "p2_tru_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
   p2_rec_v1_all_ = new TProfile2D( "p2_rec_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
 
-  h2_rec_2212_pT_theta_ = new TH2F( "h2_rec_2212_pT_theta_", ";p_{T} (GeV/c);#theta (rad)",
-                                   200, 0.0, 2.0,
-                                   170, 0.0, 1.7);
+  h2_tru_pid_pT_theta_ = new TH2F( "h2_tru_pid_pT_theta_", "#theta;centrality (%)",
+                                  200, 0.0, 2.0,
+                                  170, 0.0, 1.7 );
+
+  auto file = TFile::Open( str_protons_acceptance_.c_str(), "read" );
+  if( file )
+    file->GetObject( "h2_rec_2212_pT_theta_", h2_acceptacne_2212_pT_theta_ );
 
   auto y_cm = data_header_->GetBeamRapidity();
   beta_cm_ = tanh(y_cm);
@@ -121,7 +126,7 @@ void Yield::LoopRecTracks() {
       continue;
     h3_rec_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_rec_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
-    h2_rec_2212_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
+    h2_acceptacne_2212_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
   }
 }
 
@@ -147,6 +152,13 @@ void Yield::LoopTruParticles() {
     auto delta_phi = AngleDifference(mom4.Phi(), psi_rp);
     if( fabs(charge) < 0.01 )
       continue;
+    if( pid == 2212 ){
+      if( h2_acceptacne_2212_pT_theta_ ) {
+        auto n_entries =h2_acceptacne_2212_pT_theta_->Interpolate(mom4.Pt(), mom4.Theta());
+        if( n_entries < 1.0 )
+          continue;
+      }
+    }
     h3_tru_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
     if( !is_prim )
       continue;
@@ -156,6 +168,7 @@ void Yield::LoopTruParticles() {
     h2_tru_theta_centrality_all_->Fill(mom4.Theta(), centrality);
     h3_tru_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_tru_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
+    h2_tru_pid_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
   }
 }
 
@@ -178,6 +191,6 @@ void Yield::UserFinish() {
   p2_rec_v1_pid_->Write();
   p2_tru_v1_all_->Write();
   p2_rec_v1_all_->Write();
-  h2_rec_2212_pT_theta_->Write();
+  h2_tru_pid_pT_theta_->Write();
   std::cout << "Finished" << std::endl;
 }
