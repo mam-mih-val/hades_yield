@@ -69,28 +69,6 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   p2_tru_v1_all_ = new TProfile2D( "p2_tru_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
   p2_rec_v1_all_ = new TProfile2D( "p2_rec_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
 
-  p3_dtheta_dphi_dpT_loss_ = new TProfile3D("p3_dtheta_dphi_dpT_loss_",
-                                            ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad);p_{T,1}-p_{T,2} (GeV/c)",
-                                            150, -1.5, 1.5,
-                                            150, -1.5, 1.5,
-                                            150, -1.5, 1.5  );
-  h2_theta_phi_sector_lost_population_ = new TH2F( "h2_theta_phi_sector_lost_population",
-                                                  ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
-                                                  50, -0.75, 0.75,
-                                                  120, 0.3, 1.5);
-  p2_dphi_dtheta_second_efficiency_ = new TProfile2D( "p2_dphi_dtheta_second_efficiency_",
-                             ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
-                             150, -1.5, 1.5,
-                             150, -1.5, 1.5);
-  p2_dphi_dtheta_pair_efficiency_ = new TProfile2D( "p2_dphi_dtheta_pair_efficiency_",
-                             ";#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
-                             150, -1.5, 1.5,
-                             150, -1.5, 1.5);
-  p2_dphi_dtheta_conditional_efficiency_ = new TProfile3D( "p2_dphi_dtheta_conditional_efficiency_",
-                                                          ";#theta (rad);#phi_{1}-#phi_{2} (rad);#theta_{1}-#theta_{2} (rad)",
-                                                          120, 0.3, 1.5,
-                                                          150, -1.5, 1.5,
-                                                          150, -1.5, 1.5);
 
   auto y_cm = data_header_->GetBeamRapidity();
   beta_cm_ = tanh(y_cm);
@@ -158,8 +136,6 @@ void Yield::LoopTruParticles() {
     auto is_prim = particle[var_is_primary].GetBool();
     auto mom4 = particle.DataT<Particle>()->Get4MomentumByMass(mass);
     auto phi = mom4.Phi() + M_PI;
-    int sector1 = phi / ( M_PI/3.0 );
-    auto match1 = rec_sim_matching_->GetMatchInverted(idx1);
     double charge=0.0;
     if( TDatabasePDG::Instance()->GetParticle( pid ) ){
       charge= TDatabasePDG::Instance()->GetParticle( pid )->Charge() / 3.0;
@@ -167,71 +143,11 @@ void Yield::LoopTruParticles() {
     auto delta_phi = AngleDifference(mom4.Phi(), psi_rp);
     if( fabs(charge) < 0.01 )
       continue;
-    if(  mom4.Theta() < 0.3 )
-      continue;
-    if( mom4.Theta() > 1.5 )
-      continue;
-//    if( mom4.Pt() < 0.4 )
-//      continue;
+    h3_tru_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
     if( !is_prim )
       continue;
     if( pid!=reference_pdg_code_ )
       continue;
-    for( int idx2= 0; idx2 < sim_particles_->size(); idx2++ ){
-      if( idx2 == idx1 )
-        continue;
-      auto particle2 = (*sim_particles_)[idx2];
-      auto mom42 = particle2.DataT<Particle>()->Get4MomentumByMass(mass);
-      auto phi2 = mom42.Phi() + M_PI;
-      int sector2 = phi2 / ( M_PI/3.0 );
-      if( sector1 != sector2 )
-        continue;
-      double charge2=0.0;
-      auto pid2 = particle2.DataT<Particle>()->GetPid();
-      if( TDatabasePDG::Instance()->GetParticle( pid2 ) ){
-        charge2= TDatabasePDG::Instance()->GetParticle( pid2 )->Charge() / 3.0;
-      }
-      auto is_prim2 = particle2[var_is_primary].GetBool();
-      if( fabs(charge2) < 0.01 )
-        continue;
-      if( mom42.Theta() < 0.3 )
-        continue;
-      if( mom42.Theta() > 1.5 )
-        continue;
-//      if( !is_prim2 )
-//        continue;
-//      if( mom42.Pt() < 0.4 )
-//        continue;
-      auto dphi = AngleDifference( mom4.Phi(), mom42.Phi() );
-      auto dtheta = AngleDifference( mom4.Theta(), mom42.Theta() );
-      auto dpT =  mom4.Pt() - mom42.Pt();
-      auto match2  = rec_sim_matching_->GetMatchInverted(idx2);
-      int n_rec = 0;
-      if( match1 >= 0 )
-        n_rec++;
-      if( match2 >= 0 )
-        n_rec++;
-      if( match1 == match2 && match1 >= 0 )
-        n_rec = 1;
-
-      p3_dtheta_dphi_dpT_loss_->Fill( dphi, dtheta, dpT, 2-n_rec );
-      if( n_rec < 2 ){
-        double sector_phi = ( sector1*M_PI/3.0 + (sector1+1)*M_PI/3.0 ) / 2 - M_PI;
-        h2_theta_phi_sector_lost_population_ -> Fill( mom4.Phi() - sector_phi, mom4.Theta(), 2-n_rec );
-        h2_theta_phi_sector_lost_population_ -> Fill( mom42.Phi() - sector_phi, mom42.Theta(), 2-n_rec );
-      }
-      if( match2 < 0 )
-        p2_dphi_dtheta_second_efficiency_->Fill( dphi, dtheta, 0 );
-      if( match2 >= 0 )
-        p2_dphi_dtheta_second_efficiency_->Fill( dphi, dtheta, 1 );
-
-      int first_and_second = match1 >= 0 && match2 >= 0;
-      p2_dphi_dtheta_pair_efficiency_->Fill(dphi, dtheta, first_and_second);
-      if( match2 < 0 )
-        continue;
-      p2_dphi_dtheta_conditional_efficiency_->Fill(mom4.Theta(), dphi, dtheta, first_and_second);
-    }
-    h3_tru_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_tru_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     h2_tru_theta_centrality_all_->Fill(mom4.Theta(), centrality);
     h3_tru_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
@@ -258,10 +174,5 @@ void Yield::UserFinish() {
   p2_rec_v1_pid_->Write();
   p2_tru_v1_all_->Write();
   p2_rec_v1_all_->Write();
-  p3_dtheta_dphi_dpT_loss_->Write();
-  h2_theta_phi_sector_lost_population_->Write();
-  p2_dphi_dtheta_second_efficiency_->Write();
-  p2_dphi_dtheta_pair_efficiency_->Write();
-  p2_dphi_dtheta_conditional_efficiency_->Write();
   std::cout << "Finished" << std::endl;
 }

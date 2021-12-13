@@ -69,13 +69,6 @@ private:
   TProfile2D* p2_tru_v1_all_{nullptr};
   TProfile2D* p2_rec_v1_all_{nullptr};
 
-  TProfile3D* p3_dtheta_dphi_dpT_loss_{nullptr};
-  TH2F* h2_theta_phi_sector_lost_population_{nullptr};
-
-  TProfile2D* p2_dphi_dtheta_pair_efficiency_{nullptr};
-  TProfile2D* p2_dphi_dtheta_second_efficiency_{nullptr};
-  TProfile3D* p2_dphi_dtheta_conditional_efficiency_{nullptr};
-
   double beta_cm_;
   double ref_mass_;
 
