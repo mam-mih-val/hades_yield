@@ -68,6 +68,8 @@ private:
   TH2F* h2_tru_theta_centrality_all_{nullptr};
   TProfile2D* p2_tru_v1_all_{nullptr};
   TProfile2D* p2_rec_v1_all_{nullptr};
+  // For Acceptance calculation purpose
+  TH2F* h2_rec_2212_pT_theta_{nullptr};
 
   double beta_cm_;
   double ref_mass_;

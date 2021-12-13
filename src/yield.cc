@@ -69,6 +69,9 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   p2_tru_v1_all_ = new TProfile2D( "p2_tru_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
   p2_rec_v1_all_ = new TProfile2D( "p2_rec_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
 
+  h2_rec_2212_pT_theta_ = new TH2F( "h2_rec_2212_pT_theta_", ";p_{T} (GeV/c);#theta (rad)",
+                                   200, 0.0, 2.0,
+                                   170, 0.0, 1.7);
 
   auto y_cm = data_header_->GetBeamRapidity();
   beta_cm_ = tanh(y_cm);
@@ -118,6 +121,7 @@ void Yield::LoopRecTracks() {
       continue;
     h3_rec_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_rec_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
+    h2_rec_2212_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
   }
 }
 
@@ -174,5 +178,6 @@ void Yield::UserFinish() {
   p2_rec_v1_pid_->Write();
   p2_tru_v1_all_->Write();
   p2_rec_v1_all_->Write();
+  h2_rec_2212_pT_theta_->Write();
   std::cout << "Finished" << std::endl;
 }
