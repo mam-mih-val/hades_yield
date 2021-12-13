@@ -35,15 +35,15 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   h1_rec_phi_ = new TH1F( "h1_rec_phi_", ";#phi (rad)", 100, -0.5, 0.5 );
   h1_tru_phi_ = new TH1F( "h1_tru_phi_", ";#phi (rad)", 100, -1.5, 1.5 );
 
-  int nbins[] = {12, 10, 10, 12, 10, 12};
-  double xmin[] = {0., 0.0, -0.5, 0.3, -0.5, 0.3};
-  double xmax[] = {60., 2.0, +0.5, 1.5, 0.5, 1.5};
+  int nbins[] = {12, 10, 10, 12, 10, 10, 12};
+  double xmin[] = {0., 0.0, -0.5, 0.3, 0.0, -0.5, 0.3};
+  double xmax[] = {60., 2.0, +0.5, 1.5, 2.0,0.5, 1.5};
   hn_tru_npairs_centrality_phi_theta_ = new THnSparseF( "hn_tru_npairs_centrality_phi_theta_",
-                                                 ";centrality (%);p_{T} (GeV/c);#phi_{1} (rad);#theta_{1} (rad);#phi_{2} (rad);#theta_{2} (rad);",
-                                                 6, nbins, xmin, xmax);
+                                                 ";centrality (%);p_{T}^{1} (GeV/c);#phi_{1} (rad);#theta_{1} (rad);p_{T}^{2} (GeV/c);#phi_{2} (rad);#theta_{2} (rad);",
+                                                 7, nbins, xmin, xmax);
   hn_rec_npairs_centrality_phi_theta_ = new THnSparseF( "hn_rec_npairs_centrality_phi_theta_",
-                                                 ";centrality (%);p_{T} (GeV/c);#phi_{1} (rad);#theta_{1} (rad);#phi_{2} (rad);#theta_{2} (rad);",
-                                                 6, nbins, xmin, xmax);
+                                                 ";centrality (%);p_{T}^{1} (GeV/c);#phi_{1} (rad);#theta_{1} (rad);p_{T}^{2} (GeV/c);#phi_{2} (rad);#theta_{2} (rad);",
+                                                 7, nbins, xmin, xmax);
 
   h3_rec_all_npart_centrality_pT_theta_ = new TH3F( "h3_rec_all_npart_centrality_pT_theta_",
                                             ";centrality (%);p_{T} (GeV/c);#theta (rad)",
@@ -148,7 +148,7 @@ void Yield::LoopRecTracks() {
       if( fabs(sector1-sector2) > 0.001 )
         continue;
       auto sector_phi2 = mom2.Phi() - sector_center;
-      double args[] = {centrality, mom1.Pt(), sector_phi1, mom1.Theta(), sector_phi2, mom2.Theta()};
+      double args[] = {centrality, mom1.Pt(), sector_phi1, mom1.Theta(),  mom2.Pt(), sector_phi2, mom2.Theta()};
       hn_rec_npairs_centrality_phi_theta_->Fill(args);
     }
   }
@@ -203,7 +203,7 @@ void Yield::LoopTruParticles() {
       }
       if( fabs(charge2) < 0.01 )
         continue;
-      double args[] = {centrality, mom1.Pt(), sector_phi1, mom1.Theta(), sector_phi2, mom2.Theta()};
+      double args[] = {centrality, mom1.Pt(), sector_phi1, mom1.Theta(), mom2.Pt(), sector_phi2, mom2.Theta()};
       hn_tru_npairs_centrality_phi_theta_->Fill(args);
     }
   }
