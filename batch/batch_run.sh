@@ -22,9 +22,9 @@ module load /cvmfs/vae.gsi.de/centos7/modules/linux-centos7-x86_64/gcc-8.1.0-gcc
 echo "loading " $ownroot
 source $ownroot
 
-echo "executing $build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code"
+echo "executing $build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code --acceptance-protons /lustre/nyx/hades/user/mmamaev/hades_yield/src/acceptance_2212_pT_theta.root"
 
-$build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code
+$build_dir/yield -i list.txt -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code --acceptance-protons /lustre/nyx/hades/user/mmamaev/hades_yield/src/acceptance_2212_pT_theta.root
 
 date $format
 echo JOB FINISHED!
