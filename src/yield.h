@@ -55,15 +55,21 @@ private:
   AnalysisTree::Matching* rec_sim_matching_{nullptr};
 
   TH1F* h1_centrality_;
+  TH1F* h1_rec_phi_;
+  TH1F* h1_tru_phi_;
 
   THnSparseF* hn_rec_npairs_centrality_phi_theta_{nullptr};
   THnSparseF* hn_tru_npairs_centrality_phi_theta_{nullptr};
 
-  TH3F*h3_rec_all_npart_centrality_phi_theta_{nullptr};
-  TH3F*h3_tru_all_npart_centrality_phi_theta_{nullptr};
+  TH3F*h3_rec_all_npart_centrality_pT_theta_{nullptr};
+  TH3F*h3_tru_all_npart_centrality_pT_theta_{nullptr};
 
-  TH3F*h3_rec_pid_npart_centrality_phi_theta_{nullptr};
-  TH3F*h3_tru_pid_npart_centrality_phi_theta_{nullptr};
+  TH3F*h3_rec_pid_npart_centrality_pT_theta_{nullptr};
+  TH3F*h3_tru_pid_npart_centrality_pT_theta_{nullptr};
+
+  // Acceptance map
+  TH3F* h3_rec_npart_phi_theta_momentum_{nullptr};
+  TH3F* h3_tru_npart_phi_theta_momentum_{nullptr};
 
   double beta_cm_;
   double ref_mass_;
