@@ -78,6 +78,28 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   if( file )
     file->GetObject( "h2_rec_2212_pT_theta_", h2_acceptacne_2212_pT_theta_ );
 
+  h2_rec_all_nprart_theta_phi_in_event_ = new TH2F("h2_rec_all_nprart_theta_phi_in_event_",
+                                                   ";theta (rad); phi (rad)",
+                                                   14, 0.2, 1.6,
+                                                   6, -M_PI, M_PI );
+
+  h3_rec_pid_nprart_theta_phi_pT_in_event_ = new TH3F("h3_rec_pid_nprart_theta_phi_pT_in_event_",
+                                                   ";theta (rad); phi (rad); p_{T} (GeV/c)",
+                                                   14, 0.2, 1.6,
+                                                   6, -M_PI, M_PI,
+                                                   10, 0, 2.0 );
+  h3_tru_pid_nprart_theta_phi_pT_in_event_ = new TH3F("h3_tru_pid_nprart_theta_phi_pT_in_event_",
+                                                   ";theta (rad); phi (rad); p_{T} (GeV/c)",
+                                                   14, 0.2, 1.6,
+                                                   6, -M_PI, M_PI,
+                                                   10, 0, 2.0 );
+
+  p3_rec_pid_efficiency_theta_pT_track_density_ = new TProfile3D("p3_rec_pid_efficiency_theta_pT_track_density_",
+                                                                 ";theta (rad); p_{T} (GeV/c); N_{Tracks}/S",
+                                                                 14, 0.2, 1.6,
+                                                                 10, 0, 2.0,
+                                                                 500, 0.0, 0.05);
+
   auto y_cm = data_header_->GetBeamRapidity();
   beta_cm_ = tanh(y_cm);
   out_file_->cd();
@@ -88,8 +110,32 @@ void Yield::UserExec() {
   auto centrality = (*event_header_)[GetVar( "event_header/selected_tof_rpc_hits_centrality" )].GetVal();
   h1_centrality_->Fill( centrality );
 
+  h2_rec_all_nprart_theta_phi_in_event_->Reset("ICESM");
+  h3_rec_pid_nprart_theta_phi_pT_in_event_->Reset("ICESM");
+  h3_tru_pid_nprart_theta_phi_pT_in_event_->Reset("ICESM");
+
   this->LoopRecTracks();
   this->LoopTruParticles();
+
+  for( int theta_bin=1; theta_bin<h2_rec_all_nprart_theta_phi_in_event_->GetNbinsX(); theta_bin++ ){
+    auto theta = h2_rec_all_nprart_theta_phi_in_event_->GetXaxis()->GetBinCenter(theta_bin);
+    auto theta_lo = h2_rec_all_nprart_theta_phi_in_event_->GetXaxis()->GetBinLowEdge(theta_bin);
+    auto theta_hi = h2_rec_all_nprart_theta_phi_in_event_->GetXaxis()->GetBinUpEdge(theta_bin);
+    auto surface = ConeSideSquare( theta_hi, theta_lo ) / 6.0;
+    for( int phi_bin=1; phi_bin<h2_rec_all_nprart_theta_phi_in_event_->GetNbinsY(); phi_bin++ ){
+      auto phi = h2_rec_all_nprart_theta_phi_in_event_->GetYaxis()->GetBinLowEdge(phi_bin);
+      auto n_tracks =  h2_rec_all_nprart_theta_phi_in_event_->GetBinContent(theta_bin, phi_bin);
+      for( int pT_bin=1; pT_bin<h3_tru_pid_nprart_theta_phi_pT_in_event_->GetNbinsZ(); pT_bin++ ){
+        auto pT = h3_rec_pid_nprart_theta_phi_pT_in_event_->GetZaxis()->GetBinLowEdge(pT_bin);
+        auto n_rec = h3_rec_pid_nprart_theta_phi_pT_in_event_->GetBinContent( theta_bin, phi_bin, pT_bin );
+        auto n_tru = h3_tru_pid_nprart_theta_phi_pT_in_event_->GetBinContent( theta_bin, phi_bin, pT_bin );
+        if( n_tru < 1.0 )
+          continue;
+        auto track_density_unbiased = (n_tracks - n_rec) / surface;
+        p3_rec_pid_efficiency_theta_pT_track_density_->Fill( theta, pT, track_density_unbiased, n_rec/n_tru );
+      }
+    }
+  }
 }
 
 void Yield::LoopRecTracks() {
@@ -118,6 +164,7 @@ void Yield::LoopRecTracks() {
     h2_rec_theta_centrality_all_->Fill(mom4.Theta(), centrality);
     if( chi2 > 100.0 )
       continue;
+    h2_rec_all_nprart_theta_phi_in_event_->Fill( mom4.Theta(), mom4.Phi() );
     if ( -10 > dca_xy || dca_xy > 10 )
       continue;
     if ( -10 > dca_z || dca_z > 10 )
@@ -127,6 +174,7 @@ void Yield::LoopRecTracks() {
     h3_rec_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_rec_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     h2_acceptacne_2212_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
+    h3_rec_pid_nprart_theta_phi_pT_in_event_->Fill( mom4.Theta(), mom4.Phi(), mom4.Pt() );
   }
 }
 
@@ -154,7 +202,9 @@ void Yield::LoopTruParticles() {
       continue;
     if( pid == 2212 ){
       if( h2_acceptacne_2212_pT_theta_ ) {
-        auto n_entries =h2_acceptacne_2212_pT_theta_->Interpolate(mom4.Pt(), mom4.Theta());
+        auto pT_bin = h2_acceptacne_2212_pT_theta_->GetXaxis()->FindBin(mom4.Pt());
+        auto theta_bin = h2_acceptacne_2212_pT_theta_->GetYaxis()->FindBin(mom4.Theta());
+        auto n_entries =h2_acceptacne_2212_pT_theta_->GetBinContent(pT_bin, theta_bin);
         if( n_entries < 1.0 )
           continue;
       }
@@ -169,6 +219,7 @@ void Yield::LoopTruParticles() {
     h3_tru_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_tru_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     h2_tru_pid_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
+    h3_tru_pid_nprart_theta_phi_pT_in_event_->Fill( mom4.Theta(), mom4.Phi(), mom4.Pt() );
   }
 }
 
@@ -192,5 +243,9 @@ void Yield::UserFinish() {
   p2_tru_v1_all_->Write();
   p2_rec_v1_all_->Write();
   h2_tru_pid_pT_theta_->Write();
+  p3_rec_pid_efficiency_theta_pT_track_density_->Write();
+  h2_rec_all_nprart_theta_phi_in_event_->Write();
+  h3_rec_pid_nprart_theta_phi_pT_in_event_->Write();
+  h3_tru_pid_nprart_theta_phi_pT_in_event_->Write();
   std::cout << "Finished" << std::endl;
 }

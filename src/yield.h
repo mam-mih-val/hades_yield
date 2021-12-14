@@ -43,6 +43,13 @@ private:
       delta_phi-=2*M_PI;
     return delta_phi;
   }
+  static double ConeSideSquare(double theta1, double theta2, double a=100.0, double alpha=55.0*M_PI/180.0){
+    double S=0;
+    S = M_PI* a*a * cos(alpha)*cos(alpha) / sin(alpha) *
+        (sin(theta1) / sin( alpha+theta1 )*sin(theta1) / sin( alpha+theta1 ) -
+         sin(theta2) / sin( alpha+theta2 )*sin(theta2) / sin( alpha+theta2 ) );
+    return S;
+  }
   void LoopRecTracks();
   void LoopTruParticles();
 
@@ -73,6 +80,15 @@ private:
   TH2F*h2_acceptacne_2212_pT_theta_{nullptr};
 
   TH2F* h2_tru_pid_pT_theta_{nullptr};
+
+  // Calculating efficiency dependence on track density
+
+  TH2F*h2_rec_all_nprart_theta_phi_in_event_{nullptr};
+
+  TH3F*h3_rec_pid_nprart_theta_phi_pT_in_event_{nullptr};
+  TH3F*h3_tru_pid_nprart_theta_phi_pT_in_event_{nullptr};
+
+  TProfile3D* p3_rec_pid_efficiency_theta_pT_track_density_{nullptr};
 
   double beta_cm_;
   double ref_mass_;
