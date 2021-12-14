@@ -80,25 +80,25 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
 
   h2_rec_all_nprart_theta_phi_in_event_ = new TH2F("h2_rec_all_nprart_theta_phi_in_event_",
                                                    ";theta (rad); phi (rad)",
-                                                   14, 0.2, 1.6,
+                                                   7, 0.2, 1.6,
                                                    6, -M_PI, M_PI );
 
   h3_rec_pid_nprart_theta_phi_pT_in_event_ = new TH3F("h3_rec_pid_nprart_theta_phi_pT_in_event_",
                                                    ";theta (rad); phi (rad); p_{T} (GeV/c)",
-                                                   14, 0.2, 1.6,
+                                                   7, 0.2, 1.6,
                                                    6, -M_PI, M_PI,
                                                    10, 0, 2.0 );
   h3_tru_pid_nprart_theta_phi_pT_in_event_ = new TH3F("h3_tru_pid_nprart_theta_phi_pT_in_event_",
                                                    ";theta (rad); phi (rad); p_{T} (GeV/c)",
-                                                   14, 0.2, 1.6,
+                                                   7, 0.2, 1.6,
                                                    6, -M_PI, M_PI,
                                                    10, 0, 2.0 );
 
   p3_rec_pid_efficiency_theta_pT_track_density_ = new TProfile3D("p3_rec_pid_efficiency_theta_pT_track_density_",
                                                                  ";theta (rad); p_{T} (GeV/c); N_{Tracks}/S",
-                                                                 14, 0.2, 1.6,
+                                                                 7, 0.2, 1.6,
                                                                  10, 0, 2.0,
-                                                                 500, 0.0, 0.05);
+                                                                 15, 0.0, 15.0);
 
   auto y_cm = data_header_->GetBeamRapidity();
   beta_cm_ = tanh(y_cm);
@@ -131,7 +131,7 @@ void Yield::UserExec() {
         auto n_tru = h3_tru_pid_nprart_theta_phi_pT_in_event_->GetBinContent( theta_bin, phi_bin, pT_bin );
         if( n_tru < 1.0 )
           continue;
-        auto track_density_unbiased = (n_tracks - n_rec) / surface;
+        auto track_density_unbiased = n_tracks - n_rec;
         p3_rec_pid_efficiency_theta_pT_track_density_->Fill( theta, pT, track_density_unbiased, n_rec/n_tru );
       }
     }
