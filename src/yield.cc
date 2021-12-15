@@ -80,25 +80,25 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
 
   h2_rec_all_nprart_theta_phi_in_event_ = new TH2F("h2_rec_all_nprart_theta_phi_in_event_",
                                                    ";theta (rad); phi (rad)",
-                                                   7, 0.2, 1.6,
+                                                   1, 0.2, 1.6,
                                                    6, -M_PI, M_PI );
 
   h3_rec_pid_nprart_theta_phi_pT_in_event_ = new TH3F("h3_rec_pid_nprart_theta_phi_pT_in_event_",
                                                    ";theta (rad); phi (rad); p_{T} (GeV/c)",
-                                                   7, 0.2, 1.6,
+                                                   14, 0.2, 1.6,
                                                    6, -M_PI, M_PI,
                                                    10, 0, 2.0 );
   h3_tru_pid_nprart_theta_phi_pT_in_event_ = new TH3F("h3_tru_pid_nprart_theta_phi_pT_in_event_",
                                                    ";theta (rad); phi (rad); p_{T} (GeV/c)",
-                                                   7, 0.2, 1.6,
+                                                   14, 0.2, 1.6,
                                                    6, -M_PI, M_PI,
                                                    10, 0, 2.0 );
 
   p3_rec_pid_efficiency_theta_pT_track_density_ = new TProfile3D("p3_rec_pid_efficiency_theta_pT_track_density_",
                                                                  ";theta (rad); p_{T} (GeV/c); N_{Tracks}/S",
-                                                                 7, 0.2, 1.6,
+                                                                 14, 0.2, 1.6,
                                                                  10, 0, 2.0,
-                                                                 15, 0.0, 15.0);
+                                                                 40, 0.0, 40.0);
 
   auto y_cm = data_header_->GetBeamRapidity();
   beta_cm_ = tanh(y_cm);
@@ -117,14 +117,14 @@ void Yield::UserExec() {
   this->LoopRecTracks();
   this->LoopTruParticles();
 
-  for( int theta_bin=1; theta_bin<h2_rec_all_nprart_theta_phi_in_event_->GetNbinsX(); theta_bin++ ){
-    auto theta = h2_rec_all_nprart_theta_phi_in_event_->GetXaxis()->GetBinCenter(theta_bin);
-    auto theta_lo = h2_rec_all_nprart_theta_phi_in_event_->GetXaxis()->GetBinLowEdge(theta_bin);
-    auto theta_hi = h2_rec_all_nprart_theta_phi_in_event_->GetXaxis()->GetBinUpEdge(theta_bin);
+  for( int theta_bin=1; theta_bin<h3_tru_pid_nprart_theta_phi_pT_in_event_->GetNbinsX(); theta_bin++ ){
+    auto theta_lo = h2_rec_all_nprart_theta_phi_in_event_->GetXaxis()->GetBinLowEdge(1);
+    auto theta_hi = h2_rec_all_nprart_theta_phi_in_event_->GetXaxis()->GetBinUpEdge(1);
     auto surface = ConeSideSquare( theta_hi, theta_lo ) / 6.0;
-    for( int phi_bin=1; phi_bin<h2_rec_all_nprart_theta_phi_in_event_->GetNbinsY(); phi_bin++ ){
-      auto phi = h2_rec_all_nprart_theta_phi_in_event_->GetYaxis()->GetBinLowEdge(phi_bin);
-      auto n_tracks =  h2_rec_all_nprart_theta_phi_in_event_->GetBinContent(theta_bin, phi_bin);
+    auto theta = h3_tru_pid_nprart_theta_phi_pT_in_event_->GetXaxis()->GetBinCenter(theta_bin);
+    for( int phi_bin=1; phi_bin<h3_tru_pid_nprart_theta_phi_pT_in_event_->GetNbinsY(); phi_bin++ ){
+      auto phi = h3_tru_pid_nprart_theta_phi_pT_in_event_->GetYaxis()->GetBinLowEdge(phi_bin);
+      auto n_tracks =  h2_rec_all_nprart_theta_phi_in_event_->GetBinContent(1, phi_bin);
       for( int pT_bin=1; pT_bin<h3_tru_pid_nprart_theta_phi_pT_in_event_->GetNbinsZ(); pT_bin++ ){
         auto pT = h3_rec_pid_nprart_theta_phi_pT_in_event_->GetZaxis()->GetBinLowEdge(pT_bin);
         auto n_rec = h3_rec_pid_nprart_theta_phi_pT_in_event_->GetBinContent( theta_bin, phi_bin, pT_bin );
@@ -171,10 +171,12 @@ void Yield::LoopRecTracks() {
       continue;
     if( pid != reference_pdg_code_ )
       continue;
-    h3_rec_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_rec_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     h2_acceptacne_2212_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
     h3_rec_pid_nprart_theta_phi_pT_in_event_->Fill( mom4.Theta(), mom4.Phi(), mom4.Pt() );
+    if( pid == 2212 && mom4.Pt() < 0.4 )
+      continue;
+    h3_rec_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
   }
 }
 
@@ -204,7 +206,7 @@ void Yield::LoopTruParticles() {
       if( h2_acceptacne_2212_pT_theta_ ) {
         auto pT_bin = h2_acceptacne_2212_pT_theta_->GetXaxis()->FindBin(mom4.Pt());
         auto theta_bin = h2_acceptacne_2212_pT_theta_->GetYaxis()->FindBin(mom4.Theta());
-        auto n_entries =h2_acceptacne_2212_pT_theta_->GetBinContent(pT_bin, theta_bin);
+        auto n_entries = h2_acceptacne_2212_pT_theta_->GetBinContent(pT_bin, theta_bin);
         if( n_entries < 1.0 )
           continue;
       }
@@ -216,10 +218,12 @@ void Yield::LoopTruParticles() {
       continue;
     p2_tru_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     h2_tru_theta_centrality_all_->Fill(mom4.Theta(), centrality);
-    h3_tru_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_tru_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     h2_tru_pid_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
     h3_tru_pid_nprart_theta_phi_pT_in_event_->Fill( mom4.Theta(), mom4.Phi(), mom4.Pt() );
+    if( pid == 2212 && mom4.Pt() < 0.4 )
+      continue;
+    h3_tru_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
   }
 }
 
