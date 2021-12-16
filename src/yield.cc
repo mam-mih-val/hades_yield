@@ -171,12 +171,12 @@ void Yield::LoopRecTracks() {
       continue;
     if( pid != reference_pdg_code_ )
       continue;
-    p2_rec_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     h2_acceptacne_2212_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
     h3_rec_pid_nprart_theta_phi_pT_in_event_->Fill( mom4.Theta(), mom4.Phi(), mom4.Pt() );
     if( pid == 2212 && mom4.Pt() < 0.4 )
       continue;
     h3_rec_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
+    p2_rec_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
   }
 }
 
@@ -218,12 +218,12 @@ void Yield::LoopTruParticles() {
       continue;
     p2_tru_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     h2_tru_theta_centrality_all_->Fill(mom4.Theta(), centrality);
-    p2_tru_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     h2_tru_pid_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
     h3_tru_pid_nprart_theta_phi_pT_in_event_->Fill( mom4.Theta(), mom4.Phi(), mom4.Pt() );
     if( pid == 2212 && mom4.Pt() < 0.4 )
       continue;
     h3_tru_delta_phi_theta_centrality_pid_->Fill(delta_phi, mom4.Theta(), centrality);
+    p2_tru_v1_pid_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
   }
 }
 
