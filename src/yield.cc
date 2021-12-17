@@ -202,9 +202,5 @@ void Yield::UserFinish() {
   p2_tru_v1_all_->Write();
   p2_rec_v1_all_->Write();
   h2_tru_pid_pT_theta_->Write();
-  p3_rec_pid_efficiency_theta_pT_track_density_->Write();
-  h2_rec_all_nprart_theta_phi_in_event_->Write();
-  h3_rec_pid_nprart_theta_phi_pT_in_event_->Write();
-  h3_tru_pid_nprart_theta_phi_pT_in_event_->Write();
   std::cout << "Finished" << std::endl;
 }
