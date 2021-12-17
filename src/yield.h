@@ -83,13 +83,6 @@ private:
 
   // Calculating efficiency dependence on track density
 
-  TH2F*h2_rec_all_nprart_theta_phi_in_event_{nullptr};
-
-  TH3F*h3_rec_pid_nprart_theta_phi_pT_in_event_{nullptr};
-  TH3F*h3_tru_pid_nprart_theta_phi_pT_in_event_{nullptr};
-
-  TProfile3D* p3_rec_pid_efficiency_theta_pT_track_density_{nullptr};
-
   double beta_cm_;
   double ref_mass_;
 
