@@ -15,7 +15,6 @@ boost::program_options::options_description Yield::GetBoostOptions() {
   using namespace boost::program_options;
   options_description desc(GetName() + " options");
   desc.add_options()
-    ("acceptance-protons", value(&str_protons_acceptance_)->default_value(""), "PDG-code of particle")
     ("pdg-code", value(&reference_pdg_code_)->default_value(2212), "PDG-code of particle");
   return desc;
 }
@@ -55,13 +54,15 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
                                                     140, 0.2, 1.6,
                                                     12, 0.0, 60.);
 
-  h2_rec_theta_centrality_all_ = new TH2F( "h2_rec_theta_centrality_all",
-                                          "#theta;centrality (%)",
-                                          140, 0.2, 1.6,
+  h3_tru_pT_theta_centrality_pid_ = new TH3F( "h3_tru_pT_theta_centrality_pid",
+                                          ";p_{T} (GeV/c);#theta (rad);centrality (%)",
+                                          200, 0.0, 2.0,
+                                          170, 0.0, 1.7,
                                           12, 0.0, 60.);
-  h2_tru_theta_centrality_all_ = new TH2F( "h2_tru_theta_centrality_all",
-                                          "#theta;centrality (%)",
-                                          140, 0.2, 1.6,
+  h3_rec_pT_theta_centrality_pid_ = new TH3F( "h3_rec_pT_theta_centrality_pid",
+                                          ";p_{T} (GeV/c);#theta (rad);centrality (%)",
+                                          200, 0.0, 2.0,
+                                          170, 0.0, 1.7,
                                           12, 0.0, 60.);
 
   p2_tru_v1_pid_ = new TProfile2D( "p2_tru_v1_pid", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
@@ -70,13 +71,9 @@ void Yield::UserInit(std::map<std::string, void *> &Map) {
   p2_tru_v1_all_ = new TProfile2D( "p2_tru_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
   p2_rec_v1_all_ = new TProfile2D( "p2_rec_v1_all", ";theta;centrality", 140, 0.2, 1.6, 12, 0.0, 60 );
 
-  h2_tru_pid_pT_theta_ = new TH2F( "h2_tru_pid_pT_theta_", "#theta;centrality (%)",
-                                  200, 0.0, 2.0,
-                                  170, 0.0, 1.7 );
-
-  auto file = TFile::Open( str_protons_acceptance_.c_str(), "read" );
-  if( file )
-    file->GetObject( "h2_rec_2212_pT_theta_", h2_acceptacne_2212_pT_theta_ );
+  std::vector pT_axis{0.0, 0.3, 0.35, 0.45, 0.5, 0.55, 0.6, 0.7, 0.8, 0.95, 1.5};
+  std::vector<double> ycm_axis;
+  for( int i=0; i<16; ++i ){ ycm_axis.push_back( -0.75+i*0.1 ); }
 
   auto y_cm = data_header_->GetBeamRapidity();
   beta_cm_ = tanh(y_cm);
@@ -115,7 +112,6 @@ void Yield::LoopRecTracks() {
     auto delta_phi = AngleDifference(mom4.Phi(), psi_rp);
     h3_rec_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
     p2_rec_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
-    h2_rec_theta_centrality_all_->Fill(mom4.Theta(), centrality);
     if( chi2 > 100.0 )
       continue;
     if ( -10 > dca_xy || dca_xy > 10 )
@@ -124,7 +120,7 @@ void Yield::LoopRecTracks() {
       continue;
     if( pid != reference_pdg_code_ )
       continue;
-    h2_acceptacne_2212_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
+    h3_rec_pT_theta_centrality_pid_->Fill(mom4.Pt(), mom4.Theta(), centrality);
     if( pid == 2212 && mom4.Pt() < 0.4 )
       continue;
     if( abs(pid) == 211 && mom4.Pt() < 0.2 )
@@ -156,23 +152,13 @@ void Yield::LoopTruParticles() {
     auto delta_phi = AngleDifference(mom4.Phi(), psi_rp);
     if( fabs(charge) < 0.01 )
       continue;
-    if( pid == 2212 ){
-      if( h2_acceptacne_2212_pT_theta_ ) {
-        auto pT_bin = h2_acceptacne_2212_pT_theta_->GetXaxis()->FindBin(mom4.Pt());
-        auto theta_bin = h2_acceptacne_2212_pT_theta_->GetYaxis()->FindBin(mom4.Theta());
-        auto n_entries = h2_acceptacne_2212_pT_theta_->GetBinContent(pT_bin, theta_bin);
-        if( n_entries < 1.0 )
-          continue;
-      }
-    }
     h3_tru_delta_phi_theta_centrality_all_->Fill(delta_phi, mom4.Theta(), centrality);
+    p2_tru_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
     if( !is_prim )
       continue;
     if( pid!=reference_pdg_code_ )
       continue;
-    p2_tru_v1_all_->Fill( mom4.Theta(), centrality, cos(delta_phi) );
-    h2_tru_theta_centrality_all_->Fill(mom4.Theta(), centrality);
-    h2_tru_pid_pT_theta_->Fill( mom4.Pt(), mom4.Theta() );
+    h3_tru_pT_theta_centrality_pid_->Fill(mom4.Pt(), mom4.Theta(), centrality);
     if( pid == 2212 && mom4.Pt() < 0.4 )
       continue;
     if( abs(pid) == 211 && mom4.Pt() < 0.2 )
@@ -195,12 +181,11 @@ void Yield::UserFinish() {
   h3_tru_delta_phi_theta_centrality_pid_->Write();
   h3_rec_delta_phi_theta_centrality_all_->Write();
   h3_rec_delta_phi_theta_centrality_pid_->Write();
-  h2_rec_theta_centrality_all_->Write();
-  h2_tru_theta_centrality_all_->Write();
+  h3_tru_pT_theta_centrality_pid_->Write();
+  h3_rec_pT_theta_centrality_pid_->Write();
   p2_tru_v1_pid_->Write();
   p2_rec_v1_pid_->Write();
   p2_tru_v1_all_->Write();
   p2_rec_v1_all_->Write();
-  h2_tru_pid_pT_theta_->Write();
   std::cout << "Finished" << std::endl;
 }

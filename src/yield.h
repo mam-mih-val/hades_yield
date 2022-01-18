@@ -62,26 +62,21 @@ private:
 
   TH1F* h1_centrality_;
 
-  // True gen particles
-  TH3F* h3_tru_delta_phi_theta_centrality_pid_{nullptr};
+  // Average event shape of all particles
   TH3F* h3_tru_delta_phi_theta_centrality_all_{nullptr};
-  TH2F* h2_rec_theta_centrality_all_{nullptr};
+  TH3F* h3_rec_delta_phi_theta_centrality_all_{nullptr};
+  // Average event shape of particles of interest
+  TH3F* h3_tru_delta_phi_theta_centrality_pid_{nullptr};
+  TH3F* h3_rec_delta_phi_theta_centrality_pid_{nullptr};
+  // Additional QA distributions
+  TH3F* h3_tru_pT_theta_centrality_pid_{nullptr};
+  TH3F* h3_rec_pT_theta_centrality_pid_{nullptr};
+  // Flow of particles
   TProfile2D* p2_tru_v1_pid_{nullptr};
   TProfile2D* p2_rec_v1_pid_{nullptr};
-
-  // Reconstructed particles
-  TH3F* h3_rec_delta_phi_theta_centrality_pid_{nullptr};
-  TH3F* h3_rec_delta_phi_theta_centrality_all_{nullptr};
-  TH2F* h2_tru_theta_centrality_all_{nullptr};
   TProfile2D* p2_tru_v1_all_{nullptr};
   TProfile2D* p2_rec_v1_all_{nullptr};
   // For Acceptance calculation purpose
-  std::string str_protons_acceptance_;
-  TH2F*h2_acceptacne_2212_pT_theta_{nullptr};
-
-  TH2F* h2_tru_pid_pT_theta_{nullptr};
-
-  // Calculating efficiency dependence on track density
 
   double beta_cm_;
   double ref_mass_;
