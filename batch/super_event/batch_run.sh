@@ -19,7 +19,7 @@ source $ownroot
 
 echo "executing $build_dir/super_event -i $filelist -t hades_analysis_tree -n -1 -o output.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code --group-events 20"
 
-$build_dir/super_event -i $filelist -t hades_analysis_tree -n -1 -o output.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code --group-events 5
+$build_dir/super_event -i $filelist -t hades_analysis_tree -n -1 -o output.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code --group-events 1
 
 date $format
 echo JOB FINISHED!
