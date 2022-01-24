@@ -32,17 +32,17 @@ void SuperEvent::UserInit(std::map<std::string, void *> &Map) {
   sim_particles_ = GetInBranch("sim_tracks");
 
   h1_rec_all_theta_distribution_ = new TH1F( "h1_rec_all_theta_distribution_", ";theta",
-                                            7, 0.2, 1.6 );
+                                            6, 0.2, 1.4 );
 
   h1_rec_pid_theta_distribution_ = new TH1F( "h1_rec_pid_theta_distribution_", ";theta",
-                                            7, 0.2, 1.6 );
+                                            6, 0.2, 1.4 );
   h1_tru_pid_theta_distribution_ = new TH1F( "h1_tru_pid_theta_distribution_", ";theta",
-                                            7, 0.2, 1.6 );
+                                            6, 0.2, 1.4 );
 
   out_file_->cd();
-  for( int i=0; i<7; ++i  ) {
-    linear_fitters_.push_back( new TLinearFitter(7) );
-    linear_fitters_.back()->SetFormula("hyp7");
+  for( int i=0; i<6; ++i  ) {
+    linear_fitters_.push_back( new TLinearFitter(6) );
+    linear_fitters_.back()->SetFormula("hyp6");
   }
   std::cout << "Initialized" << std::endl;
 }
@@ -60,6 +60,7 @@ void SuperEvent::UserExec() {
     }
     std::vector<double> efficiency_theta;
     std::vector<double> err_efficiency_theta;
+    std::vector<std::vector<double>> unbiased_nparicles_theta;
     for( int theta_bin=1; theta_bin<= h1_rec_pid_theta_distribution_->GetNbinsX(); theta_bin++ ){
       auto N_rec =
           h1_rec_pid_theta_distribution_->GetBinContent(theta_bin);
@@ -71,9 +72,11 @@ void SuperEvent::UserExec() {
       auto err = sqrt( pow(rec_err/N_tru, 2) + pow(N_rec/N_tru/N_tru*tru_err, 2) );
       efficiency_theta.push_back(eff);
       err_efficiency_theta.push_back( err );
+      unbiased_nparicles_theta.push_back( n_particles_theta );
+      unbiased_nparicles_theta.back().at( theta_bin-1 ) -= N_rec;
     }
-    for( int i=0; i<7; ++i  ) {
-      linear_fitters_.at(i)->AddPoint(n_particles_theta.data(),
+    for( int i=0; i<6; ++i  ) {
+      linear_fitters_.at(i)->AddPoint(unbiased_nparicles_theta.at(i).data(),
                                 efficiency_theta.at(i)*100,
                                 err_efficiency_theta.at(i)*100);
     }
@@ -143,19 +146,19 @@ void SuperEvent::LoopTruParticles() {
 
 void SuperEvent::UserFinish() {
   out_file_->cd();
-  for( int i=0; i<7; ++i  ) {
+  for( int i=0; i<6; ++i  ) {
     linear_fitters_.at(i)->Eval();
   }
   std::vector<double> v_pars;
-  v_pars.reserve(7);
+  v_pars.reserve(6);
   std::cout << "Fit: " << std::endl;
   auto*p2_theta1_theta2 = new TH2F( "p2_theta1_theta2", ";#theta_1;#theta_2",
-                                    7, 0.2, 1.6,
-                                    7, 0.2, 1.6);
+                                    6, 0.2, 1.4,
+                                    6, 0.2, 1.4);
   auto*p1_efficiency_theta = new TH1F( "p1_efficiency_theta", ";#theta_1;#theta_2",
-                                       7, 0.2, 1.6);
-  for( int j=0; j<7; ++j ){
-    for (int i = 0; i < 8; ++i) {
+                                       6, 0.2, 1.4);
+  for( int j=0; j<6; ++j ){
+    for (int i = 0; i < 7; ++i) {
       auto par = linear_fitters_.at(j)->GetParameter(i);
       auto par_err = linear_fitters_.at(j)->GetParError(i);
       v_pars.push_back(linear_fitters_.at(j)->GetParameter(i));
