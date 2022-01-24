@@ -17,9 +17,9 @@ module load /cvmfs/vae.gsi.de/centos7/modules/linux-centos7-x86_64/gcc-8.1.0-gcc
 echo "loading " $ownroot
 source $ownroot
 
-echo "executing $build_dir/yield -i $filelist -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code"
+echo "executing $build_dir/super_event -i $filelist -t hades_analysis_tree -n -1 -o output.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code --group-events 20"
 
-$build_dir/yield -i $filelist -t hades_analysis_tree -n -1 -o yield.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code
+$build_dir/super_event -i $filelist -t hades_analysis_tree -n -1 -o output.root --cuts-macro Hades/AuAu1.23.C --pdg-code $pdg_code --group-events 5
 
 date $format
 echo JOB FINISHED!

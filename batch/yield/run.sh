@@ -40,7 +40,7 @@ sbatch --wait \
       -e ${log_dir}/%A_%a.e \
       -o ${log_dir}/%A_%a.o \
       --export=output_dir=$output_dir,file_list=$file_list,ownroot=$ownroot,lists_dir=$lists_dir,build_dir=$build_dir,pdg_code=$pdg_code \
-      -- /lustre/nyx/hades/user/mmamaev/hades_yield/batch/batch_run.sh
+      -- /lustre/nyx/hades/user/mmamaev/hades_yield/batch/yield/batch_run.sh
 
 source $ownroot
 hadd -j -f $output_dir/yield_all.root $output_dir/*/yield.root >& $log_dir/log_merge_$STEP.txt
